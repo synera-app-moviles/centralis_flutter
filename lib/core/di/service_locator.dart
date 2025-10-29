@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../storage/secure_storage_service.dart';
 import '../network/api_client.dart';
 import '../constants/api_constants.dart';
+import '../services/cloudinary_service.dart';
 
 // IAM
 import '../../iam/data/datasources/auth_remote_datasource.dart';
@@ -34,6 +35,11 @@ Future<void> initializeDependencies() async {
       baseUrl: ApiConstants.baseUrl,
       storage: sl<SecureStorageService>(),
     ),
+  );
+
+  // Cloudinary service
+  sl.registerLazySingleton<CloudinaryService>(
+    () => CloudinaryService(),
   );
 
   // IAM feature
