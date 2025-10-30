@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/colors.dart';
+import '../../../shared/widgets/avatar_widget.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -26,6 +27,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   
   Position? _selectedPosition;
   Department? _selectedDepartment;
+  String? _avatarUrl; // Nueva variable para la URL del avatar
   bool _isLoading = false;
   ProfileModel? _currentProfile;
   String? _profileId;
@@ -70,9 +72,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _emailController.text = profile.email;
     _selectedPosition = profile.position;
     _selectedDepartment = profile.department;
+    _avatarUrl = profile.avatarUrl; // Cargar URL del avatar
     
     print('📝 Position from profile: ${profile.position.value}');
     print('📝 Department from profile: ${profile.department.value}');
+    print('📝 Avatar URL: ${profile.avatarUrl}');
     
     setState(() {});
   }
@@ -124,7 +128,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         email: _emailController.text.trim(),
-        avatarUrl: _currentProfile?.avatarUrl,
+        avatarUrl: _avatarUrl, // Usar la URL del avatar actualizada
         position: _selectedPosition!,
         department: _selectedDepartment!,
       ));
@@ -275,8 +279,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
         key: _formKey,
         child: Column(
           children: [
-            // Avatar section
-            _buildAvatarSection(),
+            // Avatar section with Cloudinary integration
+            AvatarWidget(
+              imageUrl: _avatarUrl,
+              onImageChanged: (newImageUrl) {
+                setState(() {
+                  _avatarUrl = newImageUrl;
+                });
+                print('🖼️ Avatar actualizado: $newImageUrl');
+              },
+              onImageRemoved: () {
+                setState(() {
+                  _avatarUrl = null;
+                });
+                print('🗑️ Avatar eliminado');
+              },
+              size: 120,
+            ),
             const SizedBox(height: 32),
             
             // Form fields
@@ -333,194 +352,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
             _buildSaveButton(),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAvatarSection() {
-    return Center(
-      child: Stack(
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: CentralisColors.background,
-              border: Border.all(
-                color: CentralisColors.placeholder,
-                width: 2,
-              ),
-            ),
-            child: ClipOval(
-              child: _currentProfile?.avatarUrl != null && _currentProfile!.avatarUrl!.isNotEmpty
-                  ? Image.network(
-                      _currentProfile!.avatarUrl!,
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        print('🖼️ Error loading avatar: $error');
-                        return Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: CentralisColors.primary.withOpacity(0.1),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            size: 60,
-                            color: CentralisColors.primary,
-                          ),
-                        );
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: CentralisColors.background,
-                          ),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / 
-                                    loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: CentralisColors.primary,
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                  : Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            CentralisColors.primary.withOpacity(0.2),
-                            CentralisColors.primary.withOpacity(0.1),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        size: 60,
-                        color: CentralisColors.primary,
-                      ),
-                    ),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: GestureDetector(
-              onTap: () {
-                // Handle image picker
-                _showImagePicker();
-              },
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: CentralisColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.camera_alt,
-                  size: 24,
-                  color: CentralisColors.onPrimary,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showImagePicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: CentralisColors.secondary,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Select Profile Picture',
-              style: TextStyle(
-                color: CentralisColors.onBackground,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildImagePickerOption(
-                  icon: Icons.camera_alt,
-                  label: 'Camera',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Handle camera
-                  },
-                ),
-                _buildImagePickerOption(
-                  icon: Icons.photo_library,
-                  label: 'Gallery',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Handle gallery
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImagePickerOption({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: CentralisColors.background,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              size: 32,
-              color: CentralisColors.primary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: CentralisColors.onBackground,
-              fontSize: 14,
-            ),
-          ),
-        ],
       ),
     );
   }
