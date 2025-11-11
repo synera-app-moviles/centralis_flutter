@@ -13,5 +13,6 @@ class RouteNames {
   
   // Secondary routes
   static const String editProfile = '/editProfile';
+  static const String notifications = '/notifications';
   static const String splash = '/splash';
 }

@@ -23,8 +23,11 @@ class ApiConstants {
 
   //TODO: endpoints chat
 
-  //TODO: endpoints notifications
-  
+  // Notification endpoints
+  static const String notifications = '/notifications';
+  static const String notificationById = '/notifications/{notificationId}';
+  static const String notificationsByUser = '/notifications/user/{userId}';
+
   // Request timeouts
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
