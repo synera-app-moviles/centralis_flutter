@@ -151,6 +151,56 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
           },
           buttonText: 'Add Image',
         ),
+        
+        // Preview de imagen seleccionada
+        if (_selectedImageUrl != null) ...[
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AnnouncementColors.primary.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(
+                _selectedImageUrl!,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: AnnouncementColors.cardBackground,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AnnouncementColors.primary),
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: AnnouncementColors.cardBackground,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.broken_image,
+                      color: AnnouncementColors.textSecondary,
+                      size: 48,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
         
         // Selector de prioridad

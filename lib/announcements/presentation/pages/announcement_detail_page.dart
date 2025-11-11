@@ -26,6 +26,7 @@ class AnnouncementDetailPage extends StatefulWidget {
 class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
   bool _isCreator = false;
   AnnouncementBloc? _announcementBloc;
+  Announcement? _currentAnnouncement; // Para mantener el estado del anuncio
 
   @override
   void initState() {
@@ -68,28 +69,7 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
           listener: (context, state) {
             if (state is AnnouncementDetailLoaded) {
               _checkIfCreator(state.announcement.createdBy);
-            } else if (state is CommentCreated) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Comment added successfully!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              // Recargar el anuncio para mostrar el nuevo comentario
-              _announcementBloc?.add(
-                AnnouncementLoadByIdRequested(announcementId: widget.announcementId),
-              );
-            } else if (state is CommentDeleted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Comment deleted successfully!'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-              // Recargar el anuncio para actualizar la lista de comentarios
-              _announcementBloc?.add(
-                AnnouncementLoadByIdRequested(announcementId: widget.announcementId),
-              );
+              _currentAnnouncement = state.announcement; // Guardar el anuncio actual
             } else if (state is AnnouncementDeleted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -98,15 +78,6 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
                 ),
               );
               // Redirigir a la lista de anuncios después de eliminar
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            } else if (state is AnnouncementUpdated) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Announcement updated successfully!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              // Redirigir a la lista de anuncios después de actualizar
               Navigator.of(context).popUntil((route) => route.isFirst);
             } else if (state is AnnouncementError) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -119,6 +90,7 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
           },
           child: BlocBuilder<AnnouncementBloc, AnnouncementState>(
             builder: (context, state) {
+            // Solo mostrar loading para operaciones que no sean de comentarios
             if (state is AnnouncementLoading) {
               return const Center(
                 child: CircularProgressIndicator(
@@ -168,6 +140,11 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
 
             if (state is AnnouncementDetailLoaded) {
               return _buildContent(context, state.announcement);
+            }
+
+            // Para estados de comentarios, usar el anuncio guardado
+            if ((state is CommentCreated || state is CommentDeleted) && _currentAnnouncement != null) {
+              return _buildContent(context, _currentAnnouncement!);
             }
 
             return const Center(
@@ -351,17 +328,12 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
   void _navigateToEdit(BuildContext context) async {
     if (_announcementBloc?.state is AnnouncementDetailLoaded) {
       final state = _announcementBloc!.state as AnnouncementDetailLoaded;
-      final result = await Navigator.of(context).push(
+      Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => EditAnnouncementPage(announcement: state.announcement),
         ),
       );
-      
-      // Si se editó exitosamente, redirigir a la lista de anuncios
-      if (result == true && context.mounted) {
-        // Regresar a la lista de anuncios con indicación de que se actualizó
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
+      // La página de edición manejará su propia navegación
     }
   }
 

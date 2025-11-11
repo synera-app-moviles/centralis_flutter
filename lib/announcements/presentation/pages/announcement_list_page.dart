@@ -22,8 +22,35 @@ class AnnouncementListPage extends StatelessWidget {
   }
 }
 
-class _AnnouncementListView extends StatelessWidget {
+class _AnnouncementListView extends StatefulWidget {
   const _AnnouncementListView();
+
+  @override
+  State<_AnnouncementListView> createState() => _AnnouncementListViewState();
+}
+
+class _AnnouncementListViewState extends State<_AnnouncementListView> 
+    with WidgetsBindingObserver {
+  
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Recargar cuando la app regresa al foreground
+    if (state == AppLifecycleState.resumed) {
+      context.read<AnnouncementBloc>().add(AnnouncementLoadRequested());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

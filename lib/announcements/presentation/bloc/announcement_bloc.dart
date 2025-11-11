@@ -136,7 +136,6 @@ class AnnouncementBloc extends Bloc<AnnouncementEvent, AnnouncementState> {
     CommentCreateRequested event,
     Emitter<AnnouncementState> emit,
   ) async {
-    emit(AnnouncementLoading());
     try {
       final comment = await _announcementRepository.createComment(
         announcementId: event.announcementId,
@@ -153,7 +152,6 @@ class AnnouncementBloc extends Bloc<AnnouncementEvent, AnnouncementState> {
     CommentDeleteRequested event,
     Emitter<AnnouncementState> emit,
   ) async {
-    emit(AnnouncementLoading());
     try {
       await _announcementRepository.deleteComment(event.commentId);
       emit(CommentDeleted(commentId: event.commentId));
