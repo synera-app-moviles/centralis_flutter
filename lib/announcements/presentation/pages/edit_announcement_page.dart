@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../core/di/service_locator.dart';
+import '../../../shared/widgets/image_picker_widget.dart';
+import '../../../app/config/cloudinary_config.dart';
 import '../bloc/announcement_bloc.dart';
 import '../bloc/announcement_event.dart';
 import '../bloc/announcement_state.dart';
 import '../widgets/priority_selector.dart';
-import '../widgets/image_picker_widget.dart' as announce_widgets;
 import '../../data/models/announcement.dart';
 import '../../data/models/priority.dart';
 
@@ -60,7 +61,7 @@ class _EditAnnouncementPageState extends State<EditAnnouncementPage> {
                   backgroundColor: AnnouncementColors.success,
                 ),
               );
-              Navigator.pop(context);
+              Navigator.pop(context, true); // Retornar true para indicar actualización
             } else if (state is AnnouncementError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -155,10 +156,20 @@ class _EditAnnouncementPageState extends State<EditAnnouncementPage> {
           ),
         ),
         const SizedBox(height: 8),
-        announce_widgets.ImagePicker(
-          selectedImageUrl: _selectedImageUrl,
-          onPickImage: _pickImage,
-          onRemoveImage: () => setState(() => _selectedImageUrl = null),
+        ImagePickerWidget(
+          imageType: ImageType.announcement,
+          currentImageUrl: _selectedImageUrl,
+          onImageUploaded: (imageUrl) {
+            setState(() {
+              _selectedImageUrl = imageUrl;
+            });
+          },
+          onImageRemoved: () {
+            setState(() {
+              _selectedImageUrl = null;
+            });
+          },
+          buttonText: 'Change Image',
         ),
         
         const SizedBox(height: 32),
@@ -200,48 +211,6 @@ class _EditAnnouncementPageState extends State<EditAnnouncementPage> {
           },
         ),
       ],
-    );
-  }
-
-  void _pickImage() {
-    // TODO: Implement image picking functionality
-    // For now, show a dialog to simulate image selection
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AnnouncementColors.cardBackground,
-          title: const Text(
-            'Select Image',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: const Text(
-            'Image picker not implemented yet. Would you like to use a sample image?',
-            style: TextStyle(color: AnnouncementColors.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: AnnouncementColors.textSecondary),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _selectedImageUrl = 'https://via.placeholder.com/400x200.png?text=Updated+Image';
-                });
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Use Sample',
-                style: TextStyle(color: AnnouncementColors.primary),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 

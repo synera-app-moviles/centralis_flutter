@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../core/di/service_locator.dart';
+import '../../../core/storage/secure_storage_service.dart';
+import '../../../shared/widgets/image_picker_widget.dart';
+import '../../../app/config/cloudinary_config.dart';
 import '../bloc/announcement_bloc.dart';
 import '../bloc/announcement_event.dart';
 import '../bloc/announcement_state.dart';
 import '../widgets/priority_selector.dart';
-import '../widgets/image_picker_widget.dart' as announce_widgets;
 import '../../data/models/priority.dart';
 
 class CreateAnnouncementPage extends StatefulWidget {
@@ -45,7 +47,8 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
                   backgroundColor: AnnouncementColors.success,
                 ),
               );
-              Navigator.pop(context);
+              // Regresar a la página anterior con señal para recargar
+              Navigator.pop(context, true);
             } else if (state is AnnouncementError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -133,10 +136,20 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
         const SizedBox(height: 16),
         
         // Selector de imagen
-        announce_widgets.ImagePicker(
-          selectedImageUrl: _selectedImageUrl,
-          onPickImage: _pickImage,
-          onRemoveImage: () => setState(() => _selectedImageUrl = null),
+        ImagePickerWidget(
+          imageType: ImageType.announcement,
+          currentImageUrl: _selectedImageUrl,
+          onImageUploaded: (imageUrl) {
+            setState(() {
+              _selectedImageUrl = imageUrl;
+            });
+          },
+          onImageRemoved: () {
+            setState(() {
+              _selectedImageUrl = null;
+            });
+          },
+          buttonText: 'Add Image',
         ),
         const SizedBox(height: 24),
         
@@ -196,56 +209,33 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
            _descriptionController.text.isNotEmpty;
   }
 
-  void _pickImage() {
-    // TODO: Implement image picking functionality
-    // For now, show a dialog to simulate image selection
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AnnouncementColors.cardBackground,
-          title: const Text(
-            'Select Image',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: const Text(
-            'Image picker not implemented yet. Would you like to use a sample image?',
-            style: TextStyle(color: AnnouncementColors.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: AnnouncementColors.textSecondary),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _selectedImageUrl = 'https://via.placeholder.com/400x200.png?text=Sample+Image';
-                });
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Use Sample',
-                style: TextStyle(color: AnnouncementColors.primary),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _publishAnnouncement(BuildContext context) {
+  void _publishAnnouncement(BuildContext context) async {
+    // Obtener el userId del usuario actual
+    final storageService = sl<SecureStorageService>();
+    final userId = await storageService.getUserId();
+    
+    print('🔍 CreateAnnouncement: Obteniendo userId del storage...');
+    print('🔍 CreateAnnouncement: userId obtenido: $userId');
+    
+    if (userId == null) {
+      print('❌ CreateAnnouncement: No se pudo obtener userId del storage');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: No se pudo obtener el ID del usuario'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    print('✅ CreateAnnouncement: Creando anuncio con userId: $userId');
     context.read<AnnouncementBloc>().add(
       AnnouncementCreateRequested(
         title: _titleController.text,
         description: _descriptionController.text,
         image: _selectedImageUrl,
         priority: _selectedPriority,
-        createdBy: 'current-user-id', // TODO: Get from current user
+        createdBy: userId,
       ),
     );
   }

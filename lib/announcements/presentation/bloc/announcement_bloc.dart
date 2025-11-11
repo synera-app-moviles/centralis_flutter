@@ -40,8 +40,16 @@ class AnnouncementBloc extends Bloc<AnnouncementEvent, AnnouncementState> {
   ) async {
     emit(AnnouncementLoading());
     try {
+      // Cargar el anuncio
       final announcement = await _announcementRepository.getAnnouncementById(event.announcementId);
-      emit(AnnouncementDetailLoaded(announcement: announcement));
+      
+      // Cargar los comentarios del anuncio
+      final comments = await _announcementRepository.getCommentsByAnnouncement(event.announcementId);
+      
+      // Crear anuncio con comentarios incluidos
+      final announcementWithComments = announcement.copyWith(comments: comments);
+      
+      emit(AnnouncementDetailLoaded(announcement: announcementWithComments));
     } catch (e) {
       emit(AnnouncementError(message: e.toString()));
     }

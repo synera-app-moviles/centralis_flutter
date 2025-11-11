@@ -139,19 +139,29 @@ class _AnnouncementListView extends StatelessWidget {
     );
   }
 
-  void _navigateToCreateAnnouncement(BuildContext context) {
-    Navigator.of(context).push(
+  void _navigateToCreateAnnouncement(BuildContext context) async {
+    final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const CreateAnnouncementPage(),
       ),
     );
+    
+    // Si se creó un anuncio exitosamente, recargar la lista
+    if (result == true && context.mounted) {
+      context.read<AnnouncementBloc>().add(AnnouncementLoadRequested());
+    }
   }
 
-  void _navigateToAnnouncementDetail(BuildContext context, String announcementId) {
-    Navigator.of(context).push(
+  void _navigateToAnnouncementDetail(BuildContext context, String announcementId) async {
+    final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => AnnouncementDetailPage(announcementId: announcementId),
       ),
     );
+    
+    // Si se eliminó o editó un anuncio, recargar la lista
+    if (result == true && context.mounted) {
+      context.read<AnnouncementBloc>().add(AnnouncementLoadRequested());
+    }
   }
 }

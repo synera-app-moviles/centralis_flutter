@@ -45,6 +45,13 @@ class ApiClient {
       final url = Uri.parse('$baseUrl$endpoint');
       final headers = await _buildHeaders(requireAuth: requireAuth);
       
+      print('🚀 ApiClient POST: URL completa: $url');
+      print('🚀 ApiClient POST: Headers: $headers');
+      if (body != null) {
+        final bodyString = jsonEncode(body);
+        print('🚀 ApiClient POST: Body: $bodyString');
+      }
+      
       final response = await http.post(
         url,
         headers: headers,
@@ -127,6 +134,9 @@ class ApiClient {
 
   // Response handler with error mapping
   http.Response _handleResponse(http.Response response) {
+    print('🌐 ApiClient: Response status: ${response.statusCode}');
+    print('🌐 ApiClient: Response body: ${response.body}');
+    
     switch (response.statusCode) {
       case 200:
       case 201:
@@ -134,7 +144,9 @@ class ApiClient {
       case 400:
         throw BadRequestException(_getErrorMessage(response));
       case 401:
-        throw UnauthorizedException('Authentication failed');
+        final errorMessage = _getErrorMessage(response);
+        print('🔒 ApiClient: 401 Error details: $errorMessage');
+        throw UnauthorizedException('Authentication failed: $errorMessage');
       case 403:
         throw ForbiddenException('Access denied');
       case 404:

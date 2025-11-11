@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../core/di/service_locator.dart';
+import '../../../core/storage/secure_storage_service.dart';
 import '../bloc/announcement_bloc.dart';
 import '../bloc/announcement_event.dart';
 import '../bloc/announcement_state.dart';
-import '../widgets/comment_card.dart';
+import '../widgets/comments_section.dart';
 import '../../data/models/announcement.dart';
 import '../../data/models/priority.dart';
 import 'edit_announcement_page.dart';
@@ -23,25 +24,101 @@ class AnnouncementDetailPage extends StatefulWidget {
 }
 
 class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
-  final TextEditingController _commentController = TextEditingController();
-  bool _isCreator = false; // TODO: Get from current user
+  bool _isCreator = false;
+  AnnouncementBloc? _announcementBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCurrentUser();
+  }
 
   @override
   void dispose() {
-    _commentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initializeCurrentUser() async {
+    // Ya no es necesario almacenar el userId aquí, se maneja en CommentsSection
+  }
+
+  Future<void> _checkIfCreator(String announcementCreatorId) async {
+    final storageService = sl<SecureStorageService>();
+    final currentUserId = await storageService.getUserId();
+    
+    if (mounted) {
+      setState(() {
+        _isCreator = currentUserId == announcementCreatorId;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => sl<AnnouncementBloc>()
-        ..add(AnnouncementLoadByIdRequested(announcementId: widget.announcementId)),
+      create: (context) {
+        _announcementBloc = sl<AnnouncementBloc>()
+          ..add(AnnouncementLoadByIdRequested(announcementId: widget.announcementId));
+        return _announcementBloc!;
+      },
       child: Scaffold(
         backgroundColor: AnnouncementColors.background,
         appBar: _buildAppBar(context),
-        body: BlocBuilder<AnnouncementBloc, AnnouncementState>(
-          builder: (context, state) {
+        body: BlocListener<AnnouncementBloc, AnnouncementState>(
+          listener: (context, state) {
+            if (state is AnnouncementDetailLoaded) {
+              _checkIfCreator(state.announcement.createdBy);
+            } else if (state is CommentCreated) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Comment added successfully!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              // Recargar el anuncio para mostrar el nuevo comentario
+              _announcementBloc?.add(
+                AnnouncementLoadByIdRequested(announcementId: widget.announcementId),
+              );
+            } else if (state is CommentDeleted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Comment deleted successfully!'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+              // Recargar el anuncio para actualizar la lista de comentarios
+              _announcementBloc?.add(
+                AnnouncementLoadByIdRequested(announcementId: widget.announcementId),
+              );
+            } else if (state is AnnouncementDeleted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Announcement deleted successfully!'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              // Redirigir a la lista de anuncios después de eliminar
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            } else if (state is AnnouncementUpdated) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Announcement updated successfully!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              // Redirigir a la lista de anuncios después de actualizar
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            } else if (state is AnnouncementError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error: ${state.message}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: BlocBuilder<AnnouncementBloc, AnnouncementState>(
+            builder: (context, state) {
             if (state is AnnouncementLoading) {
               return const Center(
                 child: CircularProgressIndicator(
@@ -72,7 +149,7 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        context.read<AnnouncementBloc>().add(
+                        _announcementBloc?.add(
                           AnnouncementLoadByIdRequested(announcementId: widget.announcementId),
                         );
                       },
@@ -100,6 +177,7 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
               ),
             );
           },
+        ),
         ),
       ),
     );
@@ -237,68 +315,12 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
           const SizedBox(height: 24),
           
           // Sección de comentarios
-          const Text(
-            'Comments',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+          CommentsSection(
+            announcementId: widget.announcementId,
+            comments: announcement.comments,
           ),
-          const SizedBox(height: 16),
-          
-          // Lista de comentarios
-          ...announcement.comments.map((comment) => CommentCard(
-            comment: comment,
-            canDelete: comment.employeeId == 'current-user-id', // TODO: Get from current user
-            onDelete: () => _deleteComment(context, comment.id),
-          )).toList(),
-          
-          const SizedBox(height: 16),
-          
-          // Input para nuevo comentario
-          _buildCommentInput(context),
         ],
       ),
-    );
-  }
-
-  Widget _buildCommentInput(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _commentController,
-            decoration: const InputDecoration(
-              hintText: 'Write a comment...',
-              hintStyle: TextStyle(color: AnnouncementColors.textSecondary),
-              filled: true,
-              fillColor: AnnouncementColors.cardBackground,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(8)),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: EdgeInsets.all(12),
-            ),
-            style: const TextStyle(color: Colors.white),
-            maxLines: null,
-          ),
-        ),
-        const SizedBox(width: 8),
-        ElevatedButton(
-          onPressed: () => _sendComment(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AnnouncementColors.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-          child: const Text(
-            'Send',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      ],
     );
   }
 
@@ -326,73 +348,27 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
     }
   }
 
-  void _sendComment(BuildContext context) {
-    final content = _commentController.text.trim();
-    if (content.isNotEmpty) {
-      context.read<AnnouncementBloc>().add(
-        CommentCreateRequested(
-          announcementId: widget.announcementId,
-          employeeId: 'current-user-id', // TODO: Get from current user
-          content: content,
+  void _navigateToEdit(BuildContext context) async {
+    if (_announcementBloc?.state is AnnouncementDetailLoaded) {
+      final state = _announcementBloc!.state as AnnouncementDetailLoaded;
+      final result = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => EditAnnouncementPage(announcement: state.announcement),
         ),
       );
-      _commentController.clear();
+      
+      // Si se editó exitosamente, redirigir a la lista de anuncios
+      if (result == true && context.mounted) {
+        // Regresar a la lista de anuncios con indicación de que se actualizó
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     }
-  }
-
-  void _deleteComment(BuildContext context, String commentId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AnnouncementColors.cardBackground,
-          title: const Text(
-            'Delete Comment',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: const Text(
-            'Are you sure you want to delete this comment?',
-            style: TextStyle(color: AnnouncementColors.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: AnnouncementColors.textSecondary),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                context.read<AnnouncementBloc>().add(
-                  CommentDeleteRequested(commentId: commentId),
-                );
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _navigateToEdit(BuildContext context) {
-    final announcement = (context.read<AnnouncementBloc>().state as AnnouncementDetailLoaded).announcement;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => EditAnnouncementPage(announcement: announcement),
-      ),
-    );
   }
 
   void _showDeleteDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           backgroundColor: AnnouncementColors.cardBackground,
           title: const Text(
@@ -405,7 +381,7 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text(
                 'Cancel',
                 style: TextStyle(color: AnnouncementColors.textSecondary),
@@ -413,11 +389,11 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
             ),
             TextButton(
               onPressed: () {
-                context.read<AnnouncementBloc>().add(
+                // Usar la referencia almacenada del bloc
+                _announcementBloc?.add(
                   AnnouncementDeleteRequested(announcementId: widget.announcementId),
                 );
-                Navigator.pop(context); // Cerrar diálogo
-                Navigator.pop(context); // Regresar a lista
+                Navigator.pop(dialogContext); // Solo cerrar diálogo, el listener maneja la navegación
               },
               child: const Text(
                 'Delete',
