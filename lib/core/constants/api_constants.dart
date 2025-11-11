@@ -11,7 +11,13 @@ class ApiConstants {
   static const String profileById = '/profiles/{id}';
   static const String profileByUser = '/profiles/user/{userId}';
 
-  //TODO: endpoints announcements
+  // Announcement endpoints
+  static const String announcements = '/announcements';
+  static const String announcementById = '/announcements/{announcementId}';
+  static const String announcementsByPriority = '/announcements/priority/{priority}';
+  static const String announcementsByCreator = '/announcements/creator/{createdBy}';
+  static const String announcementComments = '/announcements/{announcementId}/comments';
+  static const String commentById = '/comments/{commentId}';
 
   //TODO: endpoints events
 

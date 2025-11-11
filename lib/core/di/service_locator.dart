@@ -18,6 +18,11 @@ import '../../profile/data/datasources/profile_remote_datasource.dart';
 import '../../profile/data/repositories/profile_repository.dart';
 import '../../profile/presentation/bloc/profile_bloc.dart';
 
+// Announcements
+import '../../announcements/data/datasources/announcement_remote_datasource.dart';
+import '../../announcements/data/repositories/announcement_repository.dart';
+import '../../announcements/presentation/bloc/announcement_bloc.dart';
+
 final GetIt sl = GetIt.instance;
 
 Future<void> initializeDependencies() async {
@@ -75,5 +80,20 @@ Future<void> initializeDependencies() async {
   
   sl.registerFactory<ProfileBloc>(
     () => ProfileBloc(profileRepository: sl<ProfileRepository>()),
+  );
+
+  // Announcements feature
+  sl.registerLazySingleton<AnnouncementRemoteDataSource>(
+    () => AnnouncementRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+  
+  sl.registerLazySingleton<AnnouncementRepository>(
+    () => AnnouncementRepositoryImpl(
+      remoteDataSource: sl<AnnouncementRemoteDataSource>(),
+    ),
+  );
+  
+  sl.registerFactory<AnnouncementBloc>(
+    () => AnnouncementBloc(announcementRepository: sl<AnnouncementRepository>()),
   );
 }

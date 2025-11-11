@@ -33,3 +33,14 @@ class CentralisColors {
   // Color para enlaces/navegación
   static const Color linkText = Color(0xFFD6BBFB);
 }
+
+/// Colores específicos para las vistas de anuncios
+class AnnouncementColors {
+  static const Color background = Color(0xFF160F23);        // Fondo principal
+  static const Color cardBackground = Color(0xFF4A2B61);    // Fondo de tarjetas y campos
+  static const Color primary = Color(0xFF8A46FF);           // Color primario (botones)
+  static const Color textPrimary = Colors.white;            // Texto principal
+  static const Color textSecondary = Color(0xFFB39DDB);     // Texto placeholder
+  static const Color error = Colors.red;                    // Color de error
+  static const Color success = Colors.green;                // Color de éxito
+}

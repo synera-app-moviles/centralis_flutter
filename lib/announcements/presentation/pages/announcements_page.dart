@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../../shared/widgets/placeholder_page.dart';
+import 'announcement_list_page.dart';
 
-/// Announcements page - placeholder until BLoC implementation
+/// Main announcements page that handles the tab navigation
+/// This is the page that is called from the bottom navigation
 class AnnouncementsPage extends StatelessWidget {
   const AnnouncementsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const PlaceholderPage(
-      title: 'Announcements',
-      icon: Icons.campaign,
-      showFab: true,
-    );
+    // For now, this just shows the announcement list
+    // In the future, this could have additional filtering, search, etc.
+    return const AnnouncementListPage();
   }
 }
-
-// TODO: When implementing AnnouncementsBloc:

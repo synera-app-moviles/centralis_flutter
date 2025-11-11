@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/colors.dart';
-import '../../../shared/widgets/avatar_widget.dart';
 import '../../../app/routes/route_names.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_info_section.dart';
