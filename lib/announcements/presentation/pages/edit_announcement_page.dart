@@ -4,6 +4,7 @@ import '../../../shared/theme/colors.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../shared/widgets/image_picker_widget.dart';
 import '../../../app/config/cloudinary_config.dart';
+import '../../../app/routes/route_names.dart';
 import '../bloc/announcement_bloc.dart';
 import '../bloc/announcement_event.dart';
 import '../bloc/announcement_state.dart';
@@ -55,14 +56,11 @@ class _EditAnnouncementPageState extends State<EditAnnouncementPage> {
         body: BlocListener<AnnouncementBloc, AnnouncementState>(
           listener: (context, state) {
             if (state is AnnouncementUpdated) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Announcement updated successfully!'),
-                  backgroundColor: AnnouncementColors.success,
-                ),
+              // Redirigir directamente a la lista de anuncios usando named route
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                RouteNames.announcements,
+                (route) => false,
               );
-              // Redirigir directamente a la lista de anuncios
-              Navigator.of(context).popUntil((route) => route.isFirst);
             } else if (state is AnnouncementError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

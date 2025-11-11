@@ -110,33 +110,6 @@ class AnnouncementCard extends StatelessWidget {
                   ),
                 ),
               ],
-              
-              const SizedBox(height: 12),
-              
-              // Footer con estadísticas
-              Row(
-                children: [
-                  const Icon(Icons.comment, color: AnnouncementColors.textSecondary, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${announcement.comments.length} comments',
-                    style: const TextStyle(
-                      color: AnnouncementColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.visibility, color: AnnouncementColors.textSecondary, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${announcement.seenBy.length} views',
-                    style: const TextStyle(
-                      color: AnnouncementColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
         ),

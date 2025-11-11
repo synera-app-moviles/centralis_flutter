@@ -41,12 +41,6 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
         body: BlocListener<AnnouncementBloc, AnnouncementState>(
           listener: (context, state) {
             if (state is AnnouncementCreated) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Announcement created successfully!'),
-                  backgroundColor: AnnouncementColors.success,
-                ),
-              );
               // Regresar a la página anterior con señal para recargar
               Navigator.pop(context, true);
             } else if (state is AnnouncementError) {

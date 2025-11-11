@@ -94,7 +94,7 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
             : Icon(_getIconForType()),
         label: Text(
           isLoading 
-              ? 'Subiendo...' 
+              ? 'Uploading...' 
               : widget.buttonText ?? _getDefaultButtonText(),
           style: const TextStyle(
             fontSize: 16,
@@ -118,7 +118,7 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Subiendo imagen... ${(_uploadProgress * 100).toInt()}%',
+            'Uploading image... ${(_uploadProgress * 100).toInt()}%',
             style: TextStyle(
               fontSize: 12,
               color: CentralisColors.onBackground.withOpacity(0.7),
@@ -174,7 +174,7 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
             Icon(Icons.check_circle_outline, color: CentralisColors.success, size: 20),
             const SizedBox(width: 8),
             const Text(
-              'Imagen subida exitosamente',
+              'Image uploaded successfully',
               style: TextStyle(
                 color: CentralisColors.success,
                 fontSize: 12,
@@ -196,7 +196,7 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
           padding: const EdgeInsets.symmetric(vertical: 8),
         ),
         icon: const Icon(Icons.delete_outline, size: 18),
-        label: const Text('Eliminar imagen actual'),
+        label: const Text('Remove current image'),
       ),
     );
   }
@@ -215,11 +215,11 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
   String _getDefaultButtonText() {
     switch (widget.imageType) {
       case ImageType.avatar:
-        return 'Seleccionar Avatar';
+        return 'Select Avatar';
       case ImageType.chat:
-        return 'Enviar Imagen';
+        return 'Send Image';
       case ImageType.announcement:
-        return 'Agregar Imagen';
+        return 'Add Image';
     }
   }
 
@@ -248,7 +248,7 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Seleccionar Imagen',
+                  'Select Image',
                   style: TextStyle(
                     color: CentralisColors.onBackground,
                     fontSize: 18,

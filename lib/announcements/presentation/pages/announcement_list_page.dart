@@ -77,7 +77,7 @@ class _AnnouncementListViewState extends State<_AnnouncementListView>
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToCreateAnnouncement(context),
-        backgroundColor: Colors.blue,
+        backgroundColor: AnnouncementColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: BlocBuilder<AnnouncementBloc, AnnouncementState>(

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/storage/secure_storage_service.dart';
+import '../../../app/routes/route_names.dart';
 import '../bloc/announcement_bloc.dart';
 import '../bloc/announcement_event.dart';
 import '../bloc/announcement_state.dart';
@@ -71,14 +72,11 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
               _checkIfCreator(state.announcement.createdBy);
               _currentAnnouncement = state.announcement; // Guardar el anuncio actual
             } else if (state is AnnouncementDeleted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Announcement deleted successfully!'),
-                  backgroundColor: Colors.red,
-                ),
+              // Redirigir a la lista de anuncios usando named route
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                RouteNames.announcements,
+                (route) => false,
               );
-              // Redirigir a la lista de anuncios después de eliminar
-              Navigator.of(context).popUntil((route) => route.isFirst);
             } else if (state is AnnouncementError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

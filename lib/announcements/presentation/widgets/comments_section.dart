@@ -54,24 +54,12 @@ class _CommentsSectionState extends State<CommentsSection> {
     return BlocListener<AnnouncementBloc, AnnouncementState>(
       listener: (context, state) {
         if (state is CommentCreated) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Comment added successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
           // Agregar el nuevo comentario a la lista local
           setState(() {
             _comments.add(state.comment);
           });
           _commentController.clear();
         } else if (state is CommentDeleted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Comment deleted successfully!'),
-              backgroundColor: Colors.orange,
-            ),
-          );
           // Remover el comentario de la lista local
           setState(() {
             _comments.removeWhere((comment) => comment.id == state.commentId);

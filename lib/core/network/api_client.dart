@@ -140,6 +140,7 @@ class ApiClient {
     switch (response.statusCode) {
       case 200:
       case 201:
+      case 204: // No Content - éxito para operaciones de eliminación
         return response;
       case 400:
         throw BadRequestException(_getErrorMessage(response));
