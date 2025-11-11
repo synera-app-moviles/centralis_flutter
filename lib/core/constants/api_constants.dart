@@ -26,7 +26,7 @@ class ApiConstants {
   // Notification endpoints
   static const String notifications = '/notifications';
   static const String notificationById = '/notifications/{notificationId}';
-  static const String notificationsByUser = '/notifications/user/{userId}';
+  static const String notificationsByUser = '/notifications/{userId}';
 
   // Request timeouts
   static const Duration connectTimeout = Duration(seconds: 30);
