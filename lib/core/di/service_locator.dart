@@ -18,6 +18,12 @@ import '../../profile/data/datasources/profile_remote_datasource.dart';
 import '../../profile/data/repositories/profile_repository.dart';
 import '../../profile/presentation/bloc/profile_bloc.dart';
 
+// Importa los archivos de eventos
+import '../../events/data/datasources/event_remote_datasource.dart';
+import '../../events/data/repositories/event_repository.dart';
+import '../../events/presentation/bloc/event_bloc.dart';
+
+
 final GetIt sl = GetIt.instance;
 
 Future<void> initializeDependencies() async {
@@ -76,4 +82,30 @@ Future<void> initializeDependencies() async {
   sl.registerFactory<ProfileBloc>(
     () => ProfileBloc(profileRepository: sl<ProfileRepository>()),
   );
+
+   // Eventos feature
+
+  sl.registerLazySingleton<EventRemoteDataSource>(
+     () => EventRemoteDataSourceImpl(
+       apiClient: sl<ApiClient>(),
+       storage: sl<SecureStorageService>(),
+     ),
+  );
+
+  sl.registerLazySingleton<EventRepository>(
+     () => EventRepositoryImpl(
+       remoteDataSource: sl<EventRemoteDataSource>(),
+     ),
+  );
+
+  sl.registerFactory<EventBloc>(
+     () => EventBloc(repository: sl<EventRepository>()),
+  );
+
+
+
+
+
+
+
 }

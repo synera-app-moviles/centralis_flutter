@@ -14,6 +14,9 @@ class ApiConstants {
   //TODO: endpoints announcements
 
   //TODO: endpoints events
+  static const String events = '/events';
+  static const String eventById = '/events/{eventId}';
+  static const String eventsCalendar = '/events/calendar';
 
   //TODO: endpoints chat
 
