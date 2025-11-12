@@ -110,14 +110,8 @@ class ChatItemWidget extends StatelessWidget {
   }
 
   Widget _buildLastMessage() {
-    if (chat.lastMessage == null) {
-      return const Text(
-        'Sin mensajes',
-        style: TextStyle(
-          color: ChatColors.textSecondary,
-          fontSize: 13,
-        ),
-      );
+    if (chat.lastMessage == null || chat.lastMessage!.isEmpty) {
+      return const SizedBox.shrink();
     }
 
     final prefix = chat.lastSenderName != null ? '${chat.lastSenderName}: ' : '';

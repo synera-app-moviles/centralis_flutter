@@ -44,7 +44,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } catch (error) {
       print('❌ ChatBloc: Error loading chats: $error');
       emit(ChatListError(
-        message: 'Error al cargar chats: ${error.toString()}',
+        message: 'Error loading chats: ${error.toString()}',
         errorCode: 'CHAT_LIST_LOAD_ERROR',
       ));
     }
@@ -70,7 +70,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } catch (error) {
       print('❌ ChatBloc: Error refreshing chats: $error');
       emit(ChatListError(
-        message: 'Error al refrescar chats: ${error.toString()}',
+        message: 'Error refreshing chats: ${error.toString()}',
         errorCode: 'CHAT_LIST_REFRESH_ERROR',
       ));
     }
@@ -107,7 +107,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } catch (error) {
       print('❌ ChatBloc: Error loading messages: $error');
       emit(ChatMessagesError(
-        message: 'Error al cargar mensajes: ${error.toString()}',
+        message: 'Error loading messages: ${error.toString()}',
         groupId: event.groupId,
         errorCode: 'CHAT_MESSAGES_LOAD_ERROR',
       ));
@@ -143,7 +143,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } catch (error) {
       print('❌ ChatBloc: Error refreshing messages: $error');
       emit(ChatMessagesError(
-        message: 'Error al refrescar mensajes: ${error.toString()}',
+        message: 'Error refreshing messages: ${error.toString()}',
         groupId: event.groupId,
         errorCode: 'CHAT_MESSAGES_REFRESH_ERROR',
       ));
@@ -168,26 +168,27 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       
       print('📤 ChatBloc: Message sent successfully');
       
-      // Actualización optimista: agregar el mensaje a la lista actual
-      final currentState = state;
-      if (currentState is ChatMessagesLoaded) {
-        // Si ya hay mensajes cargados, agregar el nuevo mensaje a la lista
-        final updatedMessages = [...currentState.messages, message];
-        print('📤 ChatBloc: Adding message optimistically to existing list (${updatedMessages.length} messages)');
+      // Recargar inmediatamente los mensajes para asegurar que se muestren actualizados
+      try {
+        final group = await _chatRepository.getGroupById(event.groupId);
+        final messages = await _chatRepository.getGroupMessages(event.groupId);
+        
+        print('📤 ChatBloc: Reloaded ${messages.length} messages after send');
         emit(ChatMessagesLoaded(
-          messages: updatedMessages,
-          groupId: currentState.groupId,
-          groupName: currentState.groupName,
+          messages: messages,
+          groupId: event.groupId,
+          groupName: group.name,
         ));
-      } else {
-        // Si no hay estado previo, emitir MessageSent 
+      } catch (loadError) {
+        print('⚠️ ChatBloc: Error reloading messages after send: $loadError');
+        // Si falla la recarga, emitir MessageSent como fallback
         emit(MessageSent(message: message));
       }
       
     } catch (error) {
       print('❌ ChatBloc: Error sending message: $error');
       emit(MessageSendError(
-        message: 'Error al enviar mensaje: ${error.toString()}',
+        message: 'Error sending message: ${error.toString()}',
         groupId: event.groupId,
         errorCode: 'MESSAGE_SEND_ERROR',
       ));
@@ -218,7 +219,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } catch (error) {
       print('❌ ChatBloc: Error creating group: $error');
       emit(GroupActionError(
-        message: 'Error al crear grupo: ${error.toString()}',
+        message: 'Error creating group: ${error.toString()}',
         errorCode: 'GROUP_CREATE_ERROR',
       ));
     }
@@ -247,7 +248,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } catch (error) {
       print('❌ ChatBloc: Error updating group: $error');
       emit(GroupActionError(
-        message: 'Error al actualizar grupo: ${error.toString()}',
+        message: 'Error updating group: ${error.toString()}',
         groupId: event.groupId,
         errorCode: 'GROUP_UPDATE_ERROR',
       ));
@@ -271,7 +272,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } catch (error) {
       print('❌ ChatBloc: Error deleting group: $error');
       emit(GroupActionError(
-        message: 'Error al eliminar grupo: ${error.toString()}',
+        message: 'Error deleting group: ${error.toString()}',
         groupId: event.groupId,
         errorCode: 'GROUP_DELETE_ERROR',
       ));
@@ -294,8 +295,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       emit(GroupInfoLoaded(group: group));
     } catch (error) {
       print('❌ ChatBloc: Error loading group info: $error');
-      emit(ChatError(
-        message: 'Error al cargar información del grupo: ${error.toString()}',
+      emit(GroupActionError(
+        message: 'Error loading group information: ${error.toString()}',
+        groupId: event.groupId,
         errorCode: 'GROUP_INFO_LOAD_ERROR',
       ));
     }

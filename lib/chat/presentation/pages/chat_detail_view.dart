@@ -84,11 +84,6 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         body: messageText,
       ));
       _messageController.clear();
-      
-      // Scroll hacia abajo después de enviar
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-      });
     }
   }
 
@@ -121,7 +116,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   Widget _buildHeader() {
     return ChatHeaderWidget(
       title: _currentGroupName, // Usar nombre dinámico
-      subtitle: 'En línea', // TODO: Implementar estado real
+      subtitle: null, 
       avatarUrl: _currentGroupImage, // Pasar la imagen del grupo
       onBackPressed: () {
         // Limpiar estado y volver a cargar la lista de chats
@@ -158,7 +153,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   Icon(Icons.edit, color: ChatColors.textPrimary),
                   SizedBox(width: 12),
                   Text(
-                    'Editar grupo',
+                    'Edit group',
                     style: TextStyle(color: ChatColors.textPrimary),
                   ),
                 ],
@@ -171,7 +166,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                   Icon(Icons.delete, color: Colors.red),
                   SizedBox(width: 12),
                   Text(
-                    'Eliminar grupo',
+                    'Delete group',
                     style: TextStyle(color: Colors.red),
                   ),
                 ],
@@ -187,7 +182,16 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     return BlocConsumer<ChatBloc, ChatState>(
       listener: (context, state) {
         if (state is ChatMessagesLoaded) {
-          // Los mensajes se cargaron correctamente, no hacer nada especial
+          // Messages loaded successfully - scroll to bottom to show the newest message
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBottom();
+          });
+        } else if (state is MessageSent) {
+          // Message sent successfully - scroll to bottom 
+          print('💬 ChatDetailView: Message sent successfully');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBottom();
+          });
         } else if (state is GroupInfoLoaded) {
           // Información del grupo cargada - actualizar nombre e imagen
           setState(() {
@@ -203,6 +207,12 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           
           // Recargar mensajes para asegurar que se muestren correctamente
           _loadMessages();
+        } else if (state is GroupDeleted) {
+          // Grupo eliminado - redirigir a la vista de chats y recargar lista
+          if (_currentUserId != null) {
+            _chatBloc.add(ChatListRefreshRequested(userId: _currentUserId!));
+          }
+          Navigator.of(context).pop();
         } else if (state is MessageSendError) {
           // Solo mostrar errores, no éxitos
           ScaffoldMessenger.of(context).showSnackBar(
@@ -282,7 +292,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'No hay mensajes',
+            'No messages',
             style: TextStyle(
               color: ChatColors.textPrimary,
               fontSize: 18,
@@ -291,7 +301,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Sé el primero en escribir\nun mensaje en este grupo',
+            'Be the first to write\na message in this group',
             style: TextStyle(
               color: ChatColors.textSecondary,
               fontSize: 14,
@@ -323,7 +333,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Error al cargar mensajes',
+            'Error loading messages',
             style: TextStyle(
               color: ChatColors.textPrimary,
               fontSize: 18,
@@ -364,7 +374,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           controller: _messageController,
           onSend: _sendMessage,
           isEnabled: !isLoading,
-          hintText: isLoading ? 'Enviando...' : 'Escribe un mensaje...',
+          hintText: isLoading ? 'Sending...' : 'Type a message...',
         );
       },
     );
@@ -411,18 +421,18 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       builder: (context) => AlertDialog(
         backgroundColor: ChatColors.cardBackground,
         title: const Text(
-          'Eliminar grupo',
+          'Delete group',
           style: TextStyle(color: ChatColors.textPrimary),
         ),
         content: const Text(
-          '¿Estás seguro de que quieres eliminar este grupo? Esta acción no se puede deshacer.',
+          'Are you sure you want to delete this group? This action cannot be undone.',
           style: TextStyle(color: ChatColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text(
-              'Cancelar',
+              'Cancel',
               style: TextStyle(color: ChatColors.textSecondary),
             ),
           ),
@@ -432,7 +442,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
               _deleteGroup();
             },
             child: const Text(
-              'Eliminar',
+              'Delete',
               style: TextStyle(color: Colors.red),
             ),
           ),
@@ -443,13 +453,5 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _deleteGroup() {
     _chatBloc.add(GroupDeleteRequested(groupId: widget.groupId));
-    
-    // TODO: Navegar de vuelta a la lista de chats después de eliminar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Eliminando grupo...'),
-        backgroundColor: ChatColors.accent,
-      ),
-    );
   }
 }

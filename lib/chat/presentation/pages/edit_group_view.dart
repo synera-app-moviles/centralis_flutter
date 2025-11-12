@@ -113,7 +113,7 @@ class _EditGroupViewState extends State<EditGroupView> {
         ),
       ),
       title: const Text(
-        'Editar grupo',
+        'Edit group',
         style: TextStyle(
           color: ChatColors.titleColor,
           fontSize: 20,
@@ -201,7 +201,7 @@ class _EditGroupViewState extends State<EditGroupView> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Error al cargar grupo',
+            'Error loading group',
             style: TextStyle(
               color: ChatColors.textPrimary,
               fontSize: 18,
@@ -238,7 +238,7 @@ class _EditGroupViewState extends State<EditGroupView> {
       child: Column(
         children: [
           const Text(
-            'Imagen del grupo',
+            'Group image',
             style: TextStyle(
               color: ChatColors.textPrimary,
               fontSize: 16,
@@ -274,7 +274,7 @@ class _EditGroupViewState extends State<EditGroupView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Nombre del grupo',
+          'Group name',
           style: TextStyle(
             color: ChatColors.textPrimary,
             fontSize: 16,
