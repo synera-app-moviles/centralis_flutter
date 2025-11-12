@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../chat/presentation/pages/pages.dart';
 import '../../iam/presentation/pages/sign_in_page.dart';
 import '../../iam/presentation/pages/sign_up_page.dart';
 import '../../iam/presentation/pages/splash_page.dart';
@@ -53,6 +54,35 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (_) => const EditProfilePage(),
         );
+      
+      // Chat specific routes
+      case RouteNames.chatDetail:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null && args.containsKey('groupId') && args.containsKey('groupName')) {
+          return MaterialPageRoute(
+            builder: (_) => ChatDetailView(
+              groupId: args['groupId'] as String,
+              groupName: args['groupName'] as String,
+            ),
+          );
+        }
+        return _errorRoute(settings.name);
+      
+      case RouteNames.createGroup:
+        return MaterialPageRoute(
+          builder: (_) => const CreateGroupView(),
+        );
+      
+      case RouteNames.editGroup:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null && args.containsKey('groupId')) {
+          return MaterialPageRoute(
+            builder: (_) => EditGroupView(
+              groupId: args['groupId'] as String,
+            ),
+          );
+        }
+        return _errorRoute(settings.name);
       
       // Route not found
       default:

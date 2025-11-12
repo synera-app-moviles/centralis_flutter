@@ -23,6 +23,9 @@ import '../../announcements/data/datasources/announcement_remote_datasource.dart
 import '../../announcements/data/repositories/announcement_repository.dart';
 import '../../announcements/presentation/bloc/announcement_bloc.dart';
 
+// Chat
+import '../../chat/presentation/bloc/chat_bloc.dart';
+
 final GetIt sl = GetIt.instance;
 
 Future<void> initializeDependencies() async {
@@ -95,5 +98,10 @@ Future<void> initializeDependencies() async {
   
   sl.registerFactory<AnnouncementBloc>(
     () => AnnouncementBloc(announcementRepository: sl<AnnouncementRepository>()),
+  );
+
+  // Chat feature
+  sl.registerFactory<ChatBloc>(
+    () => ChatBloc(),
   );
 }
