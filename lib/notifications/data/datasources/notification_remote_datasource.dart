@@ -69,7 +69,7 @@ class NotificationRemoteDataSource {
   }
 
   /// Get a specific notification by ID
-  Future<NotificationModel> getNotificationById(int notificationId) async {
+  Future<NotificationModel> getNotificationById(String notificationId) async {
     try {
       print('📡 NotificationRemoteDataSource: Obteniendo notificación $notificationId');
 
@@ -79,7 +79,7 @@ class NotificationRemoteDataSource {
       }
 
       final url = Uri.parse(
-        '${ApiConstants.baseUrl}${ApiConstants.notificationById.replaceAll('{notificationId}', notificationId.toString())}'
+        '${ApiConstants.baseUrl}${ApiConstants.notificationById.replaceAll('{notificationId}', notificationId)}'
       );
 
       final response = await client.get(

@@ -56,7 +56,7 @@ class NotificationRepository {
   }
 
   /// Mark notification as read
-  Future<void> markAsRead(int notificationId) async {
+  Future<void> markAsRead(String notificationId) async {
     try {
       await localDataSource.markAsRead(notificationId);
     } catch (e) {
@@ -76,7 +76,7 @@ class NotificationRepository {
   }
 
   /// Delete a notification
-  Future<void> deleteNotification(int notificationId) async {
+  Future<void> deleteNotification(String notificationId) async {
     try {
       await localDataSource.deleteNotification(notificationId);
     } catch (e) {

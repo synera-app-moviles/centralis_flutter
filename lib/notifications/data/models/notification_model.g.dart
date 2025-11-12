@@ -8,14 +8,16 @@ part of 'notification_model.dart';
 
 NotificationModel _$NotificationModelFromJson(Map<String, dynamic> json) =>
     NotificationModel(
-      id: (json['id'] as num).toInt(),
+      id: json['id'] as String,
       title: json['title'] as String,
       message: json['message'] as String,
-      type: json['type'] as String,
-      userId: json['userId'] as String,
-      relatedId: (json['relatedId'] as num?)?.toInt(),
-      sentDate: DateTime.parse(json['sentDate'] as String),
-      read: json['read'] as bool? ?? false,
+      recipientIds: (json['recipientIds'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      priority: json['priority'] as String,
+      status: json['status'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
 
 Map<String, dynamic> _$NotificationModelToJson(NotificationModel instance) =>
@@ -23,10 +25,10 @@ Map<String, dynamic> _$NotificationModelToJson(NotificationModel instance) =>
       'id': instance.id,
       'title': instance.title,
       'message': instance.message,
-      'type': instance.type,
-      'userId': instance.userId,
-      'relatedId': instance.relatedId,
-      'sentDate': instance.sentDate.toIso8601String(),
-      'read': instance.read,
+      'recipientIds': instance.recipientIds,
+      'priority': instance.priority,
+      'status': instance.status,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
     };
 

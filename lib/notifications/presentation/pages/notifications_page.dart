@@ -48,7 +48,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   void _markAsRead(NotificationModel notification) {
-    if (!notification.read) {
+    if (!notification.isRead) {
       context.read<NotificationBloc>().add(NotificationMarkAsRead(notification.id));
     }
   }
@@ -59,7 +59,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  void _deleteNotification(int notificationId) {
+  void _deleteNotification(String notificationId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -310,27 +310,27 @@ class _NotificationCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  IconData _getIconForType(String type) {
-    switch (type.toUpperCase()) {
-      case 'ANNOUNCEMENT':
-        return Icons.campaign;
-      case 'EVENT':
-        return Icons.event;
-      case 'CHAT':
-        return Icons.message;
+  IconData _getIconForPriority(String priority) {
+    switch (priority.toUpperCase()) {
+      case 'HIGH':
+        return Icons.priority_high;
+      case 'MEDIUM':
+        return Icons.notifications_active;
+      case 'LOW':
+        return Icons.notifications;
       default:
         return Icons.notifications;
     }
   }
 
-  Color _getColorForType(String type) {
-    switch (type.toUpperCase()) {
-      case 'ANNOUNCEMENT':
+  Color _getColorForPriority(String priority) {
+    switch (priority.toUpperCase()) {
+      case 'HIGH':
+        return Colors.red;
+      case 'MEDIUM':
+        return Colors.orange;
+      case 'LOW':
         return CentralisColors.primary;
-      case 'EVENT':
-        return Colors.green;
-      case 'CHAT':
-        return Colors.blue;
       default:
         return CentralisColors.primary;
     }
@@ -377,17 +377,17 @@ class _NotificationCard extends StatelessWidget {
       ),
       onDismissed: (_) => onDelete(),
       child: Card(
-        color: notification.read
+        color: notification.isRead
             ? CentralisColors.secondary.withOpacity(0.7)
             : CentralisColors.secondary,
-        elevation: notification.read ? 0 : 2,
+        elevation: notification.isRead ? 0 : 2,
         margin: const EdgeInsets.only(bottom: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: notification.read
+          side: notification.isRead
               ? BorderSide.none
               : BorderSide(
-                  color: _getColorForType(notification.type).withOpacity(0.3),
+                  color: _getColorForPriority(notification.priority).withOpacity(0.3),
                   width: 1,
                 ),
         ),
@@ -403,12 +403,12 @@ class _NotificationCard extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: _getColorForType(notification.type).withOpacity(0.2),
+                    color: _getColorForPriority(notification.priority).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    _getIconForType(notification.type),
-                    color: _getColorForType(notification.type),
+                    _getIconForPriority(notification.priority),
+                    color: _getColorForPriority(notification.priority),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -424,13 +424,13 @@ class _NotificationCard extends StatelessWidget {
                               style: TextStyle(
                                 color: CentralisColors.onBackground,
                                 fontSize: 16,
-                                fontWeight: notification.read
+                                fontWeight: notification.isRead
                                     ? FontWeight.normal
                                     : FontWeight.bold,
                               ),
                             ),
                           ),
-                          if (!notification.read)
+                          if (!notification.isRead)
                             Container(
                               width: 8,
                               height: 8,
@@ -455,9 +455,9 @@ class _NotificationCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            notification.type,
+                            notification.priority,
                             style: TextStyle(
-                              color: _getColorForType(notification.type),
+                              color: _getColorForPriority(notification.priority),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -472,7 +472,7 @@ class _NotificationCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            _formatDate(notification.sentDate),
+                            _formatDate(notification.createdAt),
                             style: TextStyle(
                               color: CentralisColors.onBackground.withOpacity(0.5),
                               fontSize: 12,

@@ -35,14 +35,14 @@ class NotificationDatabase {
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE notifications (
-        id INTEGER PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         message TEXT NOT NULL,
-        type TEXT NOT NULL,
-        userId TEXT NOT NULL,
-        relatedId INTEGER,
-        sentDate TEXT NOT NULL,
-        read INTEGER NOT NULL DEFAULT 0
+        recipientIds TEXT NOT NULL,
+        priority TEXT NOT NULL,
+        status TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
       )
     ''');
   }
@@ -78,9 +78,9 @@ class NotificationDatabase {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'notifications',
-      where: 'userId = ?',
-      whereArgs: [userId],
-      orderBy: 'sentDate DESC',
+      where: 'recipientIds LIKE ?',
+      whereArgs: ['%$userId%'], // Check if userId is in the recipientIds list
+      orderBy: 'createdAt DESC',
     );
 
     return List.generate(maps.length, (i) {
@@ -93,9 +93,9 @@ class NotificationDatabase {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'notifications',
-      where: 'userId = ? AND read = 0',
-      whereArgs: [userId],
-      orderBy: 'sentDate DESC',
+      where: 'recipientIds LIKE ? AND status != ?',
+      whereArgs: ['%$userId%', 'READ'],
+      orderBy: 'createdAt DESC',
     );
 
     return List.generate(maps.length, (i) {
@@ -107,18 +107,18 @@ class NotificationDatabase {
   Future<int> getUnreadCount(String userId) async {
     final db = await database;
     final result = await db.rawQuery(
-      'SELECT COUNT(*) as count FROM notifications WHERE userId = ? AND read = 0',
-      [userId],
+      'SELECT COUNT(*) as count FROM notifications WHERE recipientIds LIKE ? AND status != ?',
+      ['%$userId%', 'READ'],
     );
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
   /// Mark a notification as read
-  Future<void> markAsRead(int notificationId) async {
+  Future<void> markAsRead(String notificationId) async {
     final db = await database;
     await db.update(
       'notifications',
-      {'read': 1},
+      {'status': 'READ'},
       where: 'id = ?',
       whereArgs: [notificationId],
     );
@@ -129,14 +129,14 @@ class NotificationDatabase {
     final db = await database;
     await db.update(
       'notifications',
-      {'read': 1},
-      where: 'userId = ?',
-      whereArgs: [userId],
+      {'status': 'READ'},
+      where: 'recipientIds LIKE ?',
+      whereArgs: ['%$userId%'],
     );
   }
 
   /// Delete a notification
-  Future<void> deleteNotification(int notificationId) async {
+  Future<void> deleteNotification(String notificationId) async {
     final db = await database;
     await db.delete(
       'notifications',
@@ -150,8 +150,8 @@ class NotificationDatabase {
     final db = await database;
     await db.delete(
       'notifications',
-      where: 'userId = ?',
-      whereArgs: [userId],
+      where: 'recipientIds LIKE ?',
+      whereArgs: ['%$userId%'],
     );
   }
 

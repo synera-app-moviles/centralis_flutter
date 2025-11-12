@@ -30,7 +30,7 @@ class NotificationSyncRequested extends NotificationEvent {
 
 /// Event to mark notification as read
 class NotificationMarkAsRead extends NotificationEvent {
-  final int notificationId;
+  final String notificationId;
 
   const NotificationMarkAsRead(this.notificationId);
 
@@ -50,7 +50,7 @@ class NotificationMarkAllAsRead extends NotificationEvent {
 
 /// Event to delete a notification
 class NotificationDeleteRequested extends NotificationEvent {
-  final int notificationId;
+  final String notificationId;
 
   const NotificationDeleteRequested(this.notificationId);
 

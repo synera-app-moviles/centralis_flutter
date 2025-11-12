@@ -97,7 +97,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       if (state is NotificationLoaded) {
         final currentState = state as NotificationLoaded;
         final userId = currentState.notifications.isNotEmpty
-            ? currentState.notifications.first.userId
+            ? currentState.notifications.first.recipientIds.first
             : null;
 
         if (userId != null) {
@@ -149,7 +149,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       if (state is NotificationLoaded) {
         final currentState = state as NotificationLoaded;
         final userId = currentState.notifications.isNotEmpty
-            ? currentState.notifications.first.userId
+            ? currentState.notifications.first.recipientIds.first
             : null;
 
         if (userId != null) {

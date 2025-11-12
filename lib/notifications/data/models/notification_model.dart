@@ -6,24 +6,24 @@ part 'notification_model.g.dart';
 /// Notification model for notifications from the web service
 @JsonSerializable()
 class NotificationModel extends Equatable {
-  final int id;
+  final String id;
   final String title;
   final String message;
-  final String type; // 'ANNOUNCEMENT', 'EVENT', 'CHAT', etc.
-  final String userId;
-  final int? relatedId; // ID of related announcement, event, etc.
-  final DateTime sentDate;
-  final bool read;
+  final List<String> recipientIds;
+  final String priority; // 'HIGH', 'MEDIUM', 'LOW'
+  final String status; // 'PENDING', 'SENT', 'READ'
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   const NotificationModel({
     required this.id,
     required this.title,
     required this.message,
-    required this.type,
-    required this.userId,
-    this.relatedId,
-    required this.sentDate,
-    this.read = false,
+    required this.recipientIds,
+    required this.priority,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   /// Creates a NotificationModel from JSON
@@ -35,24 +35,24 @@ class NotificationModel extends Equatable {
 
   /// Creates a copy with some fields modified
   NotificationModel copyWith({
-    int? id,
+    String? id,
     String? title,
     String? message,
-    String? type,
-    String? userId,
-    int? relatedId,
-    DateTime? sentDate,
-    bool? read,
+    List<String>? recipientIds,
+    String? priority,
+    String? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return NotificationModel(
       id: id ?? this.id,
       title: title ?? this.title,
       message: message ?? this.message,
-      type: type ?? this.type,
-      userId: userId ?? this.userId,
-      relatedId: relatedId ?? this.relatedId,
-      sentDate: sentDate ?? this.sentDate,
-      read: read ?? this.read,
+      recipientIds: recipientIds ?? this.recipientIds,
+      priority: priority ?? this.priority,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -62,29 +62,35 @@ class NotificationModel extends Equatable {
       'id': id,
       'title': title,
       'message': message,
-      'type': type,
-      'userId': userId,
-      'relatedId': relatedId,
-      'sentDate': sentDate.toIso8601String(),
-      'read': read ? 1 : 0,
+      'recipientIds': recipientIds.join(','), // Convert list to comma-separated string
+      'priority': priority,
+      'status': status,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
   /// Creates a NotificationModel from a SQLite Map
   factory NotificationModel.fromMap(Map<String, dynamic> map) {
     return NotificationModel(
-      id: map['id'] as int,
+      id: map['id'] as String,
       title: map['title'] as String,
       message: map['message'] as String,
-      type: map['type'] as String,
-      userId: map['userId'] as String,
-      relatedId: map['relatedId'] as int?,
-      sentDate: DateTime.parse(map['sentDate'] as String),
-      read: map['read'] == 1,
+      recipientIds: (map['recipientIds'] as String).split(','), // Convert comma-separated string to list
+      priority: map['priority'] as String,
+      status: map['status'] as String,
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
     );
   }
 
+  /// Helper getter to check if notification is read
+  bool get isRead => status == 'READ';
+
+  /// Helper getter to check if notification is high priority
+  bool get isHighPriority => priority == 'HIGH';
+
   @override
-  List<Object?> get props => [id, title, message, type, userId, relatedId, sentDate, read];
+  List<Object?> get props => [id, title, message, recipientIds, priority, status, createdAt, updatedAt];
 }
 
