@@ -1,62 +1,102 @@
 import 'package:flutter/material.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../profile/data/repositories/profile_repository.dart';
+import '../../../profile/data/models/profile_model.dart';
 import '../../data/models/models.dart';
 import '../theme/chat_colors.dart';
 
 /// Widget para mostrar una burbuja de mensaje
-class MessageBubbleWidget extends StatelessWidget {
+class MessageBubbleWidget extends StatefulWidget {
   final MessageResponse message;
   final bool isMyMessage;
-  final String? senderAvatarUrl;
 
   const MessageBubbleWidget({
     super.key,
     required this.message,
     required this.isMyMessage,
-    this.senderAvatarUrl,
   });
+
+  @override
+  State<MessageBubbleWidget> createState() => _MessageBubbleWidgetState();
+}
+
+class _MessageBubbleWidgetState extends State<MessageBubbleWidget> {
+  ProfileModel? senderProfile;
+  bool isLoadingProfile = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSenderProfile();
+  }
+
+  Future<void> _loadSenderProfile() async {
+    if (!widget.isMyMessage) {
+      try {
+        final profileRepository = sl<ProfileRepository>();
+        final profile = await profileRepository.getProfileByUserId(widget.message.senderId);
+        if (mounted) {
+          setState(() {
+            senderProfile = profile;
+            isLoadingProfile = false;
+          });
+        }
+      } catch (error) {
+        print('❌ Error loading sender profile: $error');
+        if (mounted) {
+          setState(() {
+            isLoadingProfile = false;
+          });
+        }
+      }
+    } else {
+      setState(() {
+        isLoadingProfile = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
       child: Row(
-        mainAxisAlignment: isMyMessage 
+        mainAxisAlignment: widget.isMyMessage 
             ? MainAxisAlignment.end 
             : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isMyMessage) ...[
+          if (!widget.isMyMessage) ...[
             _buildAvatar(),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: _buildMessageBubble(),
           ),
-          if (isMyMessage) ...[
-            const SizedBox(width: 8),
-            _buildMessageStatus(),
-          ],
         ],
       ),
     );
   }
 
   Widget _buildAvatar() {
+    final avatarUrl = senderProfile?.avatarUrl;
+    final senderName = _getSenderDisplayName();
+    
     return CircleAvatar(
-      radius: 14,
+      radius: 16,
       backgroundColor: ChatColors.cardBackground,
-      backgroundImage: senderAvatarUrl != null
-          ? NetworkImage(senderAvatarUrl!)
+      backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+          ? NetworkImage(avatarUrl)
           : null,
-      child: senderAvatarUrl == null
+      child: avatarUrl == null || avatarUrl.isEmpty
           ? Text(
-              message.senderUsername.isNotEmpty 
-                  ? message.senderUsername[0].toUpperCase() 
+              senderName.isNotEmpty 
+                  ? senderName[0].toUpperCase() 
                   : 'U',
               style: const TextStyle(
                 color: ChatColors.textPrimary,
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontSize: 14,
               ),
             )
           : null,
@@ -64,106 +104,67 @@ class MessageBubbleWidget extends StatelessWidget {
   }
 
   Widget _buildMessageBubble() {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 280),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: isMyMessage ? ChatColors.bubbleMine : ChatColors.bubbleOther,
-        borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(12),
-          topRight: const Radius.circular(12),
-          bottomLeft: isMyMessage 
-              ? const Radius.circular(12) 
-              : const Radius.circular(4),
-          bottomRight: isMyMessage 
-              ? const Radius.circular(4) 
-              : const Radius.circular(12),
+    return Column(
+      crossAxisAlignment: widget.isMyMessage 
+          ? CrossAxisAlignment.end 
+          : CrossAxisAlignment.start,
+      children: [
+        // Solo mostrar nombre para mensajes de otros usuarios
+        if (!widget.isMyMessage)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              _getSenderDisplayName(),
+              style: const TextStyle(
+                color: ChatColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        
+        // Burbuja de mensaje
+        Container(
+          constraints: const BoxConstraints(maxWidth: 280),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: widget.isMyMessage 
+                ? const Color(0xFF8B5CF6) // Morado para mis mensajes
+                : ChatColors.bubbleOther,  // Gris para otros
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: widget.isMyMessage 
+                  ? const Radius.circular(16) 
+                  : const Radius.circular(4),
+              bottomRight: widget.isMyMessage 
+                  ? const Radius.circular(4) 
+                  : const Radius.circular(16),
+            ),
+          ),
+          child: Text(
+            widget.message.body,
+            style: TextStyle(
+              color: widget.isMyMessage 
+                  ? Colors.white 
+                  : ChatColors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isMyMessage && message.senderUsername.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                message.senderUsername,
-                style: const TextStyle(
-                  color: ChatColors.accent,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          Text(
-            message.body,
-            style: const TextStyle(
-              color: ChatColors.textPrimary,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _formatTime(message.sentAt),
-                style: TextStyle(
-                  color: ChatColors.textSecondary.withOpacity(0.7),
-                  fontSize: 11,
-                ),
-              ),
-              if (message.editedAt != null)
-                const Padding(
-                  padding: EdgeInsets.only(left: 4),
-                  child: Text(
-                    'editado',
-                    style: TextStyle(
-                      color: ChatColors.textSecondary,
-                      fontSize: 10,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
+      ],
     );
   }
 
-  Widget _buildMessageStatus() {
-    IconData statusIcon;
-    Color statusColor;
-
-    switch (message.status) {
-      case 'SENT':
-        statusIcon = Icons.check;
-        statusColor = ChatColors.textSecondary;
-        break;
-      case 'DELIVERED':
-        statusIcon = Icons.done_all;
-        statusColor = ChatColors.textSecondary;
-        break;
-      case 'READ':
-        statusIcon = Icons.done_all;
-        statusColor = ChatColors.accent;
-        break;
-      default:
-        statusIcon = Icons.access_time;
-        statusColor = ChatColors.textSecondary;
+  String _getSenderDisplayName() {
+    if (senderProfile != null) {
+      return '${senderProfile!.firstName} ${senderProfile!.lastName}';
     }
-
-    return Icon(
-      statusIcon,
-      size: 14,
-      color: statusColor,
-    );
-  }
-
-  String _formatTime(DateTime time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    
+    // Fallback mientras carga el perfil
+    return isLoadingProfile 
+        ? 'Cargando...' 
+        : 'Usuario';
   }
 }

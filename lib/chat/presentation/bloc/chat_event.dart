@@ -32,15 +32,17 @@ class MessageSendRequested extends ChatEvent {
   final String groupId;
   final String senderId;
   final String body;
+  final String? senderName;
 
   const MessageSendRequested({
     required this.groupId,
     required this.senderId,
     required this.body,
+    this.senderName,
   });
 
   @override
-  List<Object?> get props => [groupId, senderId, body];
+  List<Object?> get props => [groupId, senderId, body, senderName];
 }
 
 /// Eventos para crear grupos
@@ -73,16 +75,18 @@ class GroupUpdateRequested extends ChatEvent {
   final String? name;
   final String? description;
   final String? imageUrl;
+  final String? visibility;
 
   const GroupUpdateRequested({
     required this.groupId,
     this.name,
     this.description,
     this.imageUrl,
+    this.visibility,
   });
 
   @override
-  List<Object?> get props => [groupId, name, description, imageUrl];
+  List<Object?> get props => [groupId, name, description, imageUrl, visibility];
 }
 
 /// Evento para eliminar grupos

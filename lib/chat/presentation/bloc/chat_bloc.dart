@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../data/models/models.dart';
+import '../../data/repositories/chat_repository.dart';
 import 'chat_event.dart';
 import 'chat_state.dart';
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
-  // TODO: Agregar repositorio cuando se implemente el networking
-  // final ChatRepository _chatRepository;
+  final ChatRepository _chatRepository;
 
-  ChatBloc() : super(ChatInitial()) {
+  ChatBloc({required ChatRepository chatRepository}) 
+    : _chatRepository = chatRepository,
+      super(ChatInitial()) {
     on<ChatListLoadRequested>(_onChatListLoadRequested);
     on<ChatListRefreshRequested>(_onChatListRefreshRequested);
     on<ChatMessagesLoadRequested>(_onChatMessagesLoadRequested);
@@ -30,19 +31,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatListLoading());
     
     try {
-      // TODO: Implementar llamada al repositorio
-      // final chats = await _chatRepository.getChatsByUser(event.userId);
+      print('📱 ChatBloc: Loading chats for user ${event.userId}');
+      final chats = await _chatRepository.getUserGroups(event.userId);
       
-      // Mock data por ahora
-      await Future.delayed(const Duration(seconds: 1));
-      final mockChats = _generateMockChats();
-      
-      if (mockChats.isEmpty) {
+      if (chats.isEmpty) {
+        print('📱 ChatBloc: No chats found for user');
         emit(ChatListEmpty());
       } else {
-        emit(ChatListLoaded(chats: mockChats));
+        print('📱 ChatBloc: Loaded ${chats.length} chats for user');
+        emit(ChatListLoaded(chats: chats));
       }
     } catch (error) {
+      print('❌ ChatBloc: Error loading chats: $error');
       emit(ChatListError(
         message: 'Error al cargar chats: ${error.toString()}',
         errorCode: 'CHAT_LIST_LOAD_ERROR',
@@ -57,18 +57,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     // Para refresh, no mostramos loading, solo actualizamos
     try {
-      // TODO: Implementar llamada al repositorio
-      // final chats = await _chatRepository.getChatsByUser(event.userId);
+      print('🔄 ChatBloc: Refreshing chats for user ${event.userId}');
+      final chats = await _chatRepository.getUserGroups(event.userId);
       
-      await Future.delayed(const Duration(milliseconds: 500));
-      final mockChats = _generateMockChats();
-      
-      if (mockChats.isEmpty) {
+      if (chats.isEmpty) {
+        print('🔄 ChatBloc: No chats found after refresh');
         emit(ChatListEmpty());
       } else {
-        emit(ChatListLoaded(chats: mockChats));
+        print('🔄 ChatBloc: Refreshed ${chats.length} chats for user');
+        emit(ChatListLoaded(chats: chats));
       }
     } catch (error) {
+      print('❌ ChatBloc: Error refreshing chats: $error');
       emit(ChatListError(
         message: 'Error al refrescar chats: ${error.toString()}',
         errorCode: 'CHAT_LIST_REFRESH_ERROR',
@@ -84,26 +84,28 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatMessagesLoading());
     
     try {
-      // TODO: Implementar llamada al repositorio
-      // final messages = await _chatRepository.getMessagesByGroup(event.groupId);
+      print('📨 ChatBloc: Loading messages for group ${event.groupId}');
       
-      await Future.delayed(const Duration(seconds: 1));
-      final mockMessages = _generateMockMessages(event.groupId);
-      final groupName = 'Grupo Demo'; // TODO: Obtener del repositorio
+      // Obtener información del grupo y mensajes
+      final group = await _chatRepository.getGroupById(event.groupId);
+      final messages = await _chatRepository.getGroupMessages(event.groupId);
       
-      if (mockMessages.isEmpty) {
+      if (messages.isEmpty) {
+        print('📨 ChatBloc: No messages found for group');
         emit(ChatMessagesEmpty(
           groupId: event.groupId,
-          groupName: groupName,
+          groupName: group.name,
         ));
       } else {
+        print('📨 ChatBloc: Loaded ${messages.length} messages for group');
         emit(ChatMessagesLoaded(
-          messages: mockMessages,
+          messages: messages,
           groupId: event.groupId,
-          groupName: groupName,
+          groupName: group.name,
         ));
       }
     } catch (error) {
+      print('❌ ChatBloc: Error loading messages: $error');
       emit(ChatMessagesError(
         message: 'Error al cargar mensajes: ${error.toString()}',
         groupId: event.groupId,
@@ -118,26 +120,28 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     try {
-      // TODO: Implementar llamada al repositorio
-      // final messages = await _chatRepository.getMessagesByGroup(event.groupId);
+      print('🔄 ChatBloc: Refreshing messages for group ${event.groupId}');
       
-      await Future.delayed(const Duration(milliseconds: 500));
-      final mockMessages = _generateMockMessages(event.groupId);
-      final groupName = 'Grupo Demo'; // TODO: Obtener del repositorio
+      // Obtener información del grupo y mensajes
+      final group = await _chatRepository.getGroupById(event.groupId);
+      final messages = await _chatRepository.getGroupMessages(event.groupId);
       
-      if (mockMessages.isEmpty) {
+      if (messages.isEmpty) {
+        print('🔄 ChatBloc: No messages found after refresh');
         emit(ChatMessagesEmpty(
           groupId: event.groupId,
-          groupName: groupName,
+          groupName: group.name,
         ));
       } else {
+        print('🔄 ChatBloc: Refreshed ${messages.length} messages for group');
         emit(ChatMessagesLoaded(
-          messages: mockMessages,
+          messages: messages,
           groupId: event.groupId,
-          groupName: groupName,
+          groupName: group.name,
         ));
       }
     } catch (error) {
+      print('❌ ChatBloc: Error refreshing messages: $error');
       emit(ChatMessagesError(
         message: 'Error al refrescar mensajes: ${error.toString()}',
         groupId: event.groupId,
@@ -152,29 +156,36 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     try {
-      // TODO: Implementar llamada al repositorio
-      // final message = await _chatRepository.sendMessage(
-      //   groupId: event.groupId,
-      //   senderId: event.senderId,
-      //   body: event.body,
-      // );
+      print('📤 ChatBloc: Sending message to group ${event.groupId}');
       
-      await Future.delayed(const Duration(milliseconds: 800));
-      final newMessage = MessageResponse(
-        messageId: DateTime.now().millisecondsSinceEpoch.toString(),
+      final message = await _chatRepository.sendMessage(
         groupId: event.groupId,
+        content: event.body,
         senderId: event.senderId,
-        senderUsername: 'Usuario Actual',
-        body: event.body,
-        sentAt: DateTime.now(),
-        status: 'SENT',
+        senderName: event.senderName ?? 'Usuario',
+        messageType: 'TEXT',
       );
       
-      emit(MessageSent(message: newMessage));
+      print('📤 ChatBloc: Message sent successfully');
       
-      // Después de enviar, refrescar mensajes
-      add(ChatMessagesRefreshRequested(groupId: event.groupId));
+      // Actualización optimista: agregar el mensaje a la lista actual
+      final currentState = state;
+      if (currentState is ChatMessagesLoaded) {
+        // Si ya hay mensajes cargados, agregar el nuevo mensaje a la lista
+        final updatedMessages = [...currentState.messages, message];
+        print('📤 ChatBloc: Adding message optimistically to existing list (${updatedMessages.length} messages)');
+        emit(ChatMessagesLoaded(
+          messages: updatedMessages,
+          groupId: currentState.groupId,
+          groupName: currentState.groupName,
+        ));
+      } else {
+        // Si no hay estado previo, emitir MessageSent 
+        emit(MessageSent(message: message));
+      }
+      
     } catch (error) {
+      print('❌ ChatBloc: Error sending message: $error');
       emit(MessageSendError(
         message: 'Error al enviar mensaje: ${error.toString()}',
         groupId: event.groupId,
@@ -191,28 +202,21 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(GroupActionLoading());
     
     try {
-      // TODO: Implementar llamada al repositorio
-      // final group = await _chatRepository.createGroup(
-      //   name: event.name,
-      //   description: event.description,
-      //   ...
-      // );
+      print('👥 ChatBloc: Creating new group "${event.name}"');
       
-      await Future.delayed(const Duration(seconds: 1));
-      final newGroup = ChatItem(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      final group = await _chatRepository.createGroup(
         name: event.name,
-        description: event.description,
-        imageUrl: event.imageUrl,
-        memberIds: event.memberIds,
+        description: event.description ?? '',
         visibility: event.visibility,
         createdBy: event.createdBy,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        memberIds: event.memberIds,
+        imageUrl: event.imageUrl,
       );
       
-      emit(GroupCreated(group: newGroup));
+      print('👥 ChatBloc: Group created successfully: ${group.id}');
+      emit(GroupCreated(group: group));
     } catch (error) {
+      print('❌ ChatBloc: Error creating group: $error');
       emit(GroupActionError(
         message: 'Error al crear grupo: ${error.toString()}',
         errorCode: 'GROUP_CREATE_ERROR',
@@ -228,26 +232,20 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(GroupActionLoading());
     
     try {
-      // TODO: Implementar llamada al repositorio
-      // final group = await _chatRepository.updateGroup(
-      //   groupId: event.groupId,
-      //   name: event.name,
-      //   ...
-      // );
+      print('🔄 ChatBloc: Updating group ${event.groupId}');
       
-      await Future.delayed(const Duration(seconds: 1));
-      final updatedGroup = ChatItem(
-        id: event.groupId,
-        name: event.name ?? 'Grupo Actualizado',
-        description: event.description,
+      final group = await _chatRepository.updateGroup(
+        groupId: event.groupId,
+        name: event.name ?? '',
+        description: event.description ?? '',
+        visibility: event.visibility ?? 'PUBLIC',
         imageUrl: event.imageUrl,
-        createdBy: 'user1',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now(),
       );
       
-      emit(GroupUpdated(group: updatedGroup));
+      print('🔄 ChatBloc: Group updated successfully: ${group.id}');
+      emit(GroupUpdated(group: group));
     } catch (error) {
+      print('❌ ChatBloc: Error updating group: $error');
       emit(GroupActionError(
         message: 'Error al actualizar grupo: ${error.toString()}',
         groupId: event.groupId,
@@ -264,12 +262,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(GroupActionLoading());
     
     try {
-      // TODO: Implementar llamada al repositorio
-      // await _chatRepository.deleteGroup(event.groupId);
+      print('🗑️ ChatBloc: Deleting group ${event.groupId}');
       
-      await Future.delayed(const Duration(seconds: 1));
+      await _chatRepository.deleteGroup(event.groupId);
+      
+      print('🗑️ ChatBloc: Group deleted successfully');
       emit(GroupDeleted(groupId: event.groupId));
     } catch (error) {
+      print('❌ ChatBloc: Error deleting group: $error');
       emit(GroupActionError(
         message: 'Error al eliminar grupo: ${error.toString()}',
         groupId: event.groupId,
@@ -286,21 +286,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatLoading());
     
     try {
-      // TODO: Implementar llamada al repositorio
-      // final group = await _chatRepository.getGroupById(event.groupId);
+      print('ℹ️ ChatBloc: Loading group info for ${event.groupId}');
       
-      await Future.delayed(const Duration(milliseconds: 500));
-      final groupInfo = ChatItem(
-        id: event.groupId,
-        name: 'Información del Grupo',
-        description: 'Descripción del grupo de ejemplo',
-        createdBy: 'user1',
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        updatedAt: DateTime.now(),
-      );
+      final group = await _chatRepository.getGroupById(event.groupId);
       
-      emit(GroupInfoLoaded(group: groupInfo));
+      print('ℹ️ ChatBloc: Group info loaded successfully');
+      emit(GroupInfoLoaded(group: group));
     } catch (error) {
+      print('❌ ChatBloc: Error loading group info: $error');
       emit(ChatError(
         message: 'Error al cargar información del grupo: ${error.toString()}',
         errorCode: 'GROUP_INFO_LOAD_ERROR',
@@ -324,92 +317,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     ChatStateClearRequested event,
     Emitter<ChatState> emit,
   ) async {
+    print('🔄 ChatBloc: State cleared, emitting ChatInitial');
     emit(ChatInitial());
   }
 
   /// Mock data para desarrollo - será removido cuando se implemente el networking
-  List<ChatItem> _generateMockChats() {
-    return [
-      ChatItem(
-        id: '1',
-        name: 'Equipo de Desarrollo',
-        description: 'Chat del equipo de desarrollo',
-        lastMessage: '¿Cómo van con el nuevo feature?',
-        lastMessageTime: DateTime.now().subtract(const Duration(minutes: 15)),
-        lastSenderId: 'user2',
-        lastSenderName: 'Juan Pérez',
-        unreadCount: 3,
-        memberIds: ['user1', 'user2', 'user3'],
-        createdBy: 'user1',
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        updatedAt: DateTime.now().subtract(const Duration(minutes: 15)),
-      ),
-      ChatItem(
-        id: '2',
-        name: 'Proyecto Mobile',
-        description: 'Discusiones sobre el proyecto móvil',
-        lastMessage: 'Revisar los nuevos diseños',
-        lastMessageTime: DateTime.now().subtract(const Duration(hours: 2)),
-        lastSenderId: 'user3',
-        lastSenderName: 'María García',
-        unreadCount: 0,
-        memberIds: ['user1', 'user3', 'user4'],
-        createdBy: 'user3',
-        createdAt: DateTime.now().subtract(const Duration(days: 15)),
-        updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
-      ),
-      ChatItem(
-        id: '3',
-        name: 'Reuniones Semanales',
-        description: 'Chat para coordinar reuniones',
-        lastMessage: 'La reunión será a las 3pm',
-        lastMessageTime: DateTime.now().subtract(const Duration(days: 1)),
-        lastSenderId: 'user1',
-        lastSenderName: 'Tú',
-        unreadCount: 1,
-        memberIds: ['user1', 'user2', 'user3', 'user4', 'user5'],
-        createdBy: 'user1',
-        createdAt: DateTime.now().subtract(const Duration(days: 60)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-    ];
-  }
-
-  List<MessageResponse> _generateMockMessages(String groupId) {
-    final baseTime = DateTime.now();
-    return [
-      MessageResponse(
-        messageId: '1',
-        groupId: groupId,
-        senderId: 'user2',
-        senderUsername: 'Juan Pérez',
-        body: 'Hola equipo! ¿Cómo van las cosas?',
-        sentAt: baseTime.subtract(const Duration(hours: 2)),
-      ),
-      MessageResponse(
-        messageId: '2',
-        groupId: groupId,
-        senderId: 'user1',
-        senderUsername: 'Tú',
-        body: 'Todo bien! Estoy trabajando en la nueva feature',
-        sentAt: baseTime.subtract(const Duration(hours: 1, minutes: 45)),
-      ),
-      MessageResponse(
-        messageId: '3',
-        groupId: groupId,
-        senderId: 'user3',
-        senderUsername: 'María García',
-        body: 'Perfecto! ¿Necesitan ayuda con algo específico?',
-        sentAt: baseTime.subtract(const Duration(hours: 1, minutes: 30)),
-      ),
-      MessageResponse(
-        messageId: '4',
-        groupId: groupId,
-        senderId: 'user1',
-        senderUsername: 'Tú',
-        body: 'Por ahora todo bien, gracias! 👍',
-        sentAt: baseTime.subtract(const Duration(minutes: 15)),
-      ),
-    ];
-  }
 }

@@ -4,6 +4,7 @@ import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
 import '../bloc/chat_state.dart';
 import '../theme/chat_colors.dart';
+import '../../../shared/widgets/avatar_widget.dart';
 
 /// Vista para editar información de un grupo existente
 class EditGroupView extends StatefulWidget {
@@ -25,7 +26,6 @@ class _EditGroupViewState extends State<EditGroupView> {
 
   String? _currentImageUrl;
   String? _newImageUrl;
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -77,13 +77,8 @@ class _EditGroupViewState extends State<EditGroupView> {
           if (state is GroupInfoLoaded) {
             _populateFields(state.group);
           } else if (state is GroupUpdated) {
+            // Solo navegar de vuelta, sin SnackBar
             Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Grupo actualizado exitosamente'),
-                backgroundColor: ChatColors.accent,
-              ),
-            );
           } else if (state is GroupActionError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -166,13 +161,11 @@ class _EditGroupViewState extends State<EditGroupView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildCurrentImagePreview(),
+            _buildGroupImageEditor(),
             const SizedBox(height: 24),
             _buildGroupNameField(),
             const SizedBox(height: 16),
             _buildDescriptionField(),
-            const SizedBox(height: 24),
-            _buildImageSelector(),
             const SizedBox(height: 24),
           ],
         ),
@@ -240,40 +233,36 @@ class _EditGroupViewState extends State<EditGroupView> {
     );
   }
 
-  Widget _buildCurrentImagePreview() {
+  Widget _buildGroupImageEditor() {
     return Center(
       child: Column(
         children: [
           const Text(
-            'Imagen actual',
+            'Imagen del grupo',
             style: TextStyle(
               color: ChatColors.textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 12),
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: ChatColors.cardBackground,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: ChatColors.accent.withOpacity(0.3),
-                width: 2,
-              ),
-            ),
-            child: _currentImageUrl != null
-                ? CircleAvatar(
-                    radius: 58,
-                    backgroundImage: NetworkImage(_currentImageUrl!),
-                  )
-                : const Icon(
-                    Icons.group,
-                    size: 40,
-                    color: ChatColors.textSecondary,
-                  ),
+          const SizedBox(height: 16),
+          AvatarWidget(
+            imageUrl: _newImageUrl ?? _currentImageUrl,
+            size: 120,
+            isEditable: true,
+            showEditHint: true,
+            onImageChanged: (String newImageUrl) {
+              setState(() {
+                _newImageUrl = newImageUrl;
+              });
+              print('🖼️ Group image updated: $newImageUrl');
+            },
+            onImageRemoved: () {
+              setState(() {
+                _newImageUrl = null;
+              });
+              print('🗑️ Group image removed');
+            },
           ),
         ],
       ),
@@ -349,84 +338,11 @@ class _EditGroupViewState extends State<EditGroupView> {
     );
   }
 
-  Widget _buildImageSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Nueva imagen (opcional)',
-          style: TextStyle(
-            color: ChatColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: GestureDetector(
-            onTap: _pickNewImage,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: ChatColors.cardBackground,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: ChatColors.accent.withOpacity(0.5),
-                  width: 2,
-                  style: BorderStyle.solid,
-                ),
-              ),
-              child: _newImageUrl != null
-                  ? CircleAvatar(
-                      radius: 48,
-                      backgroundImage: NetworkImage(_newImageUrl!),
-                    )
-                  : const Icon(
-                      Icons.add_a_photo,
-                      size: 32,
-                      color: ChatColors.textSecondary,
-                    ),
-            ),
-          ),
-        ),
-        if (_newImageUrl != null) ...[
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  _newImageUrl = null;
-                });
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
-              icon: const Icon(Icons.delete, size: 16),
-              label: const Text('Quitar imagen nueva'),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
   void _populateFields(dynamic group) {
     setState(() {
       _groupNameController.text = group.name;
       _descriptionController.text = group.description ?? '';
       _currentImageUrl = group.imageUrl;
-      _isLoading = false;
     });
-  }
-
-  void _pickNewImage() {
-    // TODO: Implementar selector de imagen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Próximamente: Selector de imagen'),
-        backgroundColor: ChatColors.accent,
-      ),
-    );
   }
 }

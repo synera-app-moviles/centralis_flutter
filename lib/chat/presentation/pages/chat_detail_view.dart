@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/storage/secure_storage_service.dart';
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
 import '../bloc/chat_state.dart';
@@ -25,15 +26,38 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   late final ChatBloc _chatBloc;
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final SecureStorageService _storage = SecureStorageService();
 
-  // TODO: Obtener del usuario logueado
-  static const String _currentUserId = 'user1';
+  String? _currentUserId;
+  
+  // Variables dinámicas para la información del grupo
+  late String _currentGroupName;
+  String? _currentGroupImage;
 
   @override
   void initState() {
     super.initState();
     _chatBloc = context.read<ChatBloc>();
+    _currentGroupName = widget.groupName; // Inicializar con el valor pasado
+    _loadCurrentUserId();
+    _loadGroupInfo(); // Cargar información completa del grupo
     _loadMessages();
+  }
+
+  Future<void> _loadGroupInfo() async {
+    print('📋 ChatDetailView: Loading group info for ${widget.groupId}');
+    _chatBloc.add(GroupInfoLoadRequested(groupId: widget.groupId));
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    try {
+      final userId = await _storage.getUserId();
+      setState(() {
+        _currentUserId = userId;
+      });
+    } catch (error) {
+      print('❌ Error loading current userId: $error');
+    }
   }
 
   @override
@@ -53,10 +77,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   void _sendMessage() {
     final messageText = _messageController.text.trim();
-    if (messageText.isNotEmpty) {
+    if (messageText.isNotEmpty && _currentUserId != null) {
       _chatBloc.add(MessageSendRequested(
         groupId: widget.groupId,
-        senderId: _currentUserId,
+        senderId: _currentUserId!,
         body: messageText,
       ));
       _messageController.clear();
@@ -96,8 +120,15 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   Widget _buildHeader() {
     return ChatHeaderWidget(
-      title: widget.groupName,
+      title: _currentGroupName, // Usar nombre dinámico
       subtitle: 'En línea', // TODO: Implementar estado real
+      avatarUrl: _currentGroupImage, // Pasar la imagen del grupo
+      onBackPressed: () {
+        // Limpiar estado y volver a cargar la lista de chats
+        print('🔙 ChatDetailView: Back pressed, clearing state');
+        _chatBloc.add(ChatStateClearRequested());
+        Navigator.of(context).pop();
+      },
       actions: [
         PopupMenuButton<String>(
           icon: const Icon(
@@ -155,17 +186,25 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   Widget _buildContent() {
     return BlocConsumer<ChatBloc, ChatState>(
       listener: (context, state) {
-        if (state is MessageSent) {
-          // Mensaje enviado exitosamente
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Mensaje enviado'),
-              duration: Duration(seconds: 1),
-              backgroundColor: ChatColors.accent,
-            ),
-          );
+        if (state is ChatMessagesLoaded) {
+          // Los mensajes se cargaron correctamente, no hacer nada especial
+        } else if (state is GroupInfoLoaded) {
+          // Información del grupo cargada - actualizar nombre e imagen
+          setState(() {
+            _currentGroupName = state.group.name;
+            _currentGroupImage = state.group.imageUrl;
+          });
+        } else if (state is GroupUpdated) {
+          // El grupo fue actualizado - actualizar información local y recargar mensajes
+          setState(() {
+            _currentGroupName = state.group.name;
+            _currentGroupImage = state.group.imageUrl;
+          });
+          
+          // Recargar mensajes para asegurar que se muestren correctamente
+          _loadMessages();
         } else if (state is MessageSendError) {
-          // Error al enviar mensaje
+          // Solo mostrar errores, no éxitos
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error: ${state.message}'),
@@ -212,13 +251,11 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         itemCount: messages.length,
         itemBuilder: (context, index) {
           final message = messages[index];
-          final isMyMessage = message.senderId == _currentUserId;
+          final isMyMessage = _currentUserId != null && message.senderId == _currentUserId;
           
           return MessageBubbleWidget(
             message: message,
             isMyMessage: isMyMessage,
-            // TODO: Implementar avatares reales
-            senderAvatarUrl: null,
           );
         },
       ),

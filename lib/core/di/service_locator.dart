@@ -24,6 +24,8 @@ import '../../announcements/data/repositories/announcement_repository.dart';
 import '../../announcements/presentation/bloc/announcement_bloc.dart';
 
 // Chat
+import '../../chat/data/datasources/chat_remote_datasource.dart';
+import '../../chat/data/repositories/chat_repository.dart';
 import '../../chat/presentation/bloc/chat_bloc.dart';
 
 final GetIt sl = GetIt.instance;
@@ -101,7 +103,17 @@ Future<void> initializeDependencies() async {
   );
 
   // Chat feature
+  sl.registerLazySingleton<ChatRemoteDataSource>(
+    () => ChatRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+  
+  sl.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(
+      remoteDataSource: sl<ChatRemoteDataSource>(),
+    ),
+  );
+  
   sl.registerFactory<ChatBloc>(
-    () => ChatBloc(),
+    () => ChatBloc(chatRepository: sl<ChatRepository>()),
   );
 }
