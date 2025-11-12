@@ -21,7 +21,15 @@ class ApiConstants {
 
   //TODO: endpoints events
 
-  //TODO: endpoints chat
+  // Chat endpoints
+  static const String chatGroups = '/groups';
+  static const String chatGroupById = '/groups/{groupId}';
+  static const String chatGroupsByUser = '/groups';
+  static const String chatGroupsByVisibility = '/groups/visibility/{visibility}';
+  static const String chatGroupMessages = '/groups/{groupId}/messages';
+  static const String chatMessageById = '/groups/{groupId}/messages/{messageId}';
+  static const String chatGroupMembers = '/groups/{groupId}/members';
+  static const String chatGroupVisibility = '/groups/{groupId}/visibility';
 
   // Notification endpoints
   static const String notifications = '/notifications';

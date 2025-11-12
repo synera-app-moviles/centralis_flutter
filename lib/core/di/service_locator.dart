@@ -23,6 +23,10 @@ import '../../announcements/data/datasources/announcement_remote_datasource.dart
 import '../../announcements/data/repositories/announcement_repository.dart';
 import '../../announcements/presentation/bloc/announcement_bloc.dart';
 
+// Chat
+import '../../chat/data/datasources/chat_remote_datasource.dart';
+import '../../chat/data/repositories/chat_repository.dart';
+import '../../chat/presentation/bloc/chat_bloc.dart';
 // Notifications
 import '../../notifications/data/datasources/notification_local_datasource.dart';
 import '../../notifications/data/datasources/notification_remote_datasource.dart';
@@ -104,6 +108,19 @@ Future<void> initializeDependencies() async {
     () => AnnouncementBloc(announcementRepository: sl<AnnouncementRepository>()),
   );
 
+  // Chat feature
+  sl.registerLazySingleton<ChatRemoteDataSource>(
+    () => ChatRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+  
+  sl.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(
+      remoteDataSource: sl<ChatRemoteDataSource>(),
+    ),
+  );
+  
+  sl.registerFactory<ChatBloc>(
+    () => ChatBloc(chatRepository: sl<ChatRepository>()),
   // Notifications feature
   sl.registerLazySingleton<http.Client>(
     () => http.Client(),
