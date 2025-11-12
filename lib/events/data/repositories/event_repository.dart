@@ -1,4 +1,3 @@
-// lib/events/data/repositories/event_repository.dart
 import '../datasources/event_remote_datasource.dart';
 import '../models/event_model.dart';
 import '../models/create_event_request.dart';
@@ -14,37 +13,38 @@ abstract class EventRepository {
 }
 
 class EventRepositoryImpl implements EventRepository {
-  final EventRemoteDataSource remoteDataSource;
+  final EventRemoteDataSource _remote;
 
-  EventRepositoryImpl({required this.remoteDataSource});
+  EventRepositoryImpl({required EventRemoteDataSource remoteDataSource})
+      : _remote = remoteDataSource;
 
   @override
-  Future<List<EventModel>> getEvents({String? userId, String? filterType}) async {
-    return await remoteDataSource.getEvents(userId: userId, filterType: filterType);
+  Future<List<EventModel>> getEvents({String? userId, String? filterType}) {
+    return _remote.getEvents(userId: userId, filterType: filterType);
   }
 
   @override
-  Future<EventModel> getEventById(String eventId) async {
-    return await remoteDataSource.getEventById(eventId);
+  Future<EventModel> getEventById(String eventId) {
+    return _remote.getEventById(eventId);
   }
 
   @override
-  Future<List<EventModel>> getEventsCalendar({String? userId}) async {
-    return await remoteDataSource.getEventsCalendar(userId: userId);
+  Future<List<EventModel>> getEventsCalendar({String? userId}) {
+    return _remote.getEventsCalendar(userId: userId);
   }
 
   @override
   Future<void> createEvent(CreateEventRequest request) async {
-    await remoteDataSource.createEvent(request);
+    await _remote.createEvent(request);
   }
 
   @override
   Future<void> updateEvent(String eventId, UpdateEventRequest request) async {
-    await remoteDataSource.updateEvent(eventId, request);
+    await _remote.updateEvent(eventId, request);
   }
 
   @override
   Future<void> deleteEvent(String eventId) async {
-    await remoteDataSource.deleteEvent(eventId);
+    await _remote.deleteEvent(eventId);
   }
 }

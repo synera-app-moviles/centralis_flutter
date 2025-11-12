@@ -34,8 +34,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
         description: _descriptionController.text.trim(),
         date: _dateTime,
         location: _locationController.text.trim(),
-        recipientIds: ['00000000-0000-0000-0000-000000000000'], // TODO: obtener IDs reales
-        createdBy: '00000000-0000-0000-0000-000000000000', // TODO: obtener userId del token
+        recipientIds: ['00000000-0000-0000-0000-000000000000'],
+        createdBy: '00000000-0000-0000-0000-000000000000',
       );
 
       context.read<EventBloc>().add(CreateEvent(request));
@@ -57,11 +57,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
       ),
       body: BlocListener<EventBloc, EventState>(
         listener: (context, state) {
-          if (state is EventOperationSuccess) {
+          if (state is EventCreatedSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
-            Navigator.pop(context, true); // Retorna true para indicar que se creó
+            Navigator.pop(context, true);
           } else if (state is EventError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.error)),
@@ -75,6 +75,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // ... tus campos (sin cambios) ...
                 TextFormField(
                   controller: _titleController,
                   style: const TextStyle(color: Color(0xFFA68FCC)),
@@ -114,7 +115,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     labelText: 'Location',
                     labelStyle: TextStyle(color: Color(0xFFA68FCC)),
                     filled: true,
-                    fillColor: Color(0xFF30214A),
+                    fillColor: const Color(0xFF30214A),
                     border: OutlineInputBorder(borderSide: BorderSide.none),
                   ),
                 ),

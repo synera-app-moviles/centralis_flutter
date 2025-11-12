@@ -1,160 +1,113 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:async';
 import 'package:http/http.dart' as http;
-import '../storage/secure_storage_service.dart';
-import '../error/exceptions.dart';
+
 import '../constants/api_constants.dart';
+import '../storage/secure_storage_service.dart';
 
 class ApiClient {
   final String baseUrl;
-  final SecureStorageService _storage;
+  final SecureStorageService storage;
 
-  ApiClient({required this.baseUrl, required SecureStorageService storage})
-      : _storage = storage;
+  ApiClient({
+    required this.baseUrl,
+    required this.storage,
+  });
 
-  // Headers builder with JWT token
-  Future<Map<String, String>> _buildHeaders({bool requireAuth = false}) async {
-    final headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
+  Uri _buildUri(String endpoint, [Map<String, dynamic>? query]) {
+    final cleanBase = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
+    return Uri.parse('$cleanBase$cleanEndpoint').replace(
+      queryParameters: query?.map((k, v) => MapEntry(k, v.toString())),
+    );
+  }
+
+  // dart
+  Future<Map<String, String>> _headers({bool requireAuth = false}) async {
+    final headers = <String, String>{
+      HttpHeaders.contentTypeHeader: 'application/json',
+      HttpHeaders.acceptHeader: 'application/json',
     };
-
     if (requireAuth) {
-      final token = await _storage.getToken();
-      print('🔐 ApiClient: Token requerido. Token encontrado: ${token != null ? "✅ SÍ (${token.substring(0, 20)}...)" : "❌ NO"}');
-      
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
-        print('🔐 ApiClient: Header Authorization agregado');
-      } else {
-        print('❌ ApiClient: No se encontró token de autenticación');
-        throw UnauthorizedException('No authentication token found');
+      final token = await storage.getToken();
+      if (token != null && token.isNotEmpty) {
+        headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
       }
     }
-
     return headers;
   }
 
-  // Generic HTTP methods
-  Future<http.Response> post(String endpoint, {
-    Map<String, dynamic>? body,
+  Future<http.Response> get(
+    String endpoint, {
+    Map<String, dynamic>? query,
     bool requireAuth = false,
   }) async {
-    try {
-      final url = Uri.parse('$baseUrl$endpoint');
-      final headers = await _buildHeaders(requireAuth: requireAuth);
-      
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: body != null ? jsonEncode(body) : null,
-      ).timeout(ApiConstants.connectTimeout);
-
-      return _handleResponse(response);
-    } on SocketException {
-      throw NetworkException('No internet connection');
-    } on TimeoutException {
-      throw NetworkException('Request timeout');
-    }
+    final uri = _buildUri(endpoint, query);
+    final response = await http
+        .get(uri, headers: await _headers(requireAuth: requireAuth))
+        .timeout(ApiConstants.connectTimeout);
+    _throwIfError(response);
+    return response;
   }
 
-  Future<http.Response> get(String endpoint, {bool requireAuth = false}) async {
-    try {
-      final url = Uri.parse('$baseUrl$endpoint');
-      print('🌐 ApiClient GET: ${url.toString()}');
-      print('🔐 ApiClient GET: Requiere auth: $requireAuth');
-      
-      final headers = await _buildHeaders(requireAuth: requireAuth);
-      print('📋 ApiClient GET: Headers: ${headers.keys.join(", ")}');
-      
-      final response = await http.get(url, headers: headers).timeout(ApiConstants.connectTimeout);
-      print('📡 ApiClient GET: Respuesta recibida - Status: ${response.statusCode}');
-      print('📡 ApiClient GET: Respuesta body (primeros 200 chars): ${response.body.length > 200 ? response.body.substring(0, 200) + "..." : response.body}');
-      
-      return _handleResponse(response);
-    } on SocketException {
-      print('❌ ApiClient GET: Error de conexión - No internet connection');
-      throw NetworkException('No internet connection');
-    } on TimeoutException {
-      print('❌ ApiClient GET: Error de timeout');
-      throw NetworkException('Request timeout');
-    } catch (e) {
-      print('❌ ApiClient GET: Error inesperado: $e');
-      rethrow;
-    }
-  }
-
-  Future<http.Response> put(String endpoint, {
-    Map<String, dynamic>? body,
-    bool requireAuth = true,
+  Future<http.Response> post(
+    String endpoint, {
+    Object? body,
+    bool requireAuth = false,
   }) async {
-    try {
-      final url = Uri.parse('$baseUrl$endpoint');
-      final headers = await _buildHeaders(requireAuth: requireAuth);
-      
-      final response = await http.put(
-        url,
-        headers: headers,
-        body: body != null ? jsonEncode(body) : null,
-      ).timeout(ApiConstants.connectTimeout);
-
-      return _handleResponse(response);
-    } on SocketException {
-      throw NetworkException('No internet connection');
-    } on TimeoutException {
-      throw NetworkException('Request timeout');
-    }
+    final uri = _buildUri(endpoint);
+    final response = await http
+        .post(
+          uri,
+          headers: await _headers(requireAuth: requireAuth),
+          body: body == null ? null : jsonEncode(body),
+        )
+        .timeout(ApiConstants.connectTimeout);
+    _throwIfError(response);
+    return response;
   }
 
-  //prueba
-    Future<http.Response> delete(String endpoint, {bool requireAuth = true}) async {
-      try {
-        final url = Uri.parse('$baseUrl$endpoint');
-        final headers = await _buildHeaders(requireAuth: requireAuth);
+  Future<http.Response> put(
+    String endpoint, {
+    Object? body,
+    bool requireAuth = false,
+  }) async {
+    final uri = _buildUri(endpoint);
+    final response = await http
+        .put(
+          uri,
+          headers: await _headers(requireAuth: requireAuth),
+          body: body == null ? null : jsonEncode(body),
+        )
+        .timeout(ApiConstants.connectTimeout);
+    _throwIfError(response);
+    return response;
+  }
 
-        final response = await http.delete(url, headers: headers)
-            .timeout(ApiConstants.connectTimeout);
+  Future<http.Response> delete(
+    String endpoint, {
+    bool requireAuth = false,
+  }) async {
+    final uri = _buildUri(endpoint);
+    final response = await http
+        .delete(
+          uri,
+          headers: await _headers(requireAuth: requireAuth),
+        )
+        .timeout(ApiConstants.connectTimeout);
+    _throwIfError(response);
+    return response;
+  }
 
-        return _handleResponse(response);
-      } on SocketException {
-        throw NetworkException('No internet connection');
-      } on TimeoutException {
-        throw NetworkException('Request timeout');
+  void _throwIfError(http.Response response) {
+    if (response.statusCode >= 400) {
+      if (response.statusCode == 401) {
+        // Opcional: manejar sesión expirada
       }
-    }
-
-
-
-  // Response handler with error mapping
-  http.Response _handleResponse(http.Response response) {
-    switch (response.statusCode) {
-      case 200:
-      case 201:
-        return response;
-      case 400:
-        throw BadRequestException(_getErrorMessage(response));
-      case 401:
-        throw UnauthorizedException('Authentication failed');
-      case 403:
-        throw ForbiddenException('Access denied');
-      case 404:
-        throw NotFoundException('Resource not found');
-      case 409:
-        throw ConflictException(_getErrorMessage(response));
-      case 500:
-        throw ServerException('Internal server error');
-      default:
-        throw ServerException('Unknown error: ${response.statusCode}');
-    }
-  }
-
-  String _getErrorMessage(http.Response response) {
-    try {
-      final body = jsonDecode(response.body);
-      return body['message'] ?? 'Unknown error';
-    } catch (e) {
-      return 'Error parsing response';
+      throw HttpException(
+        'Error ${response.statusCode}: ${response.body}',
+        uri: response.request?.url,
+      );
     }
   }
 }
