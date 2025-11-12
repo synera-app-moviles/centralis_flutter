@@ -27,6 +27,12 @@ import '../../announcements/presentation/bloc/announcement_bloc.dart';
 import '../../chat/data/datasources/chat_remote_datasource.dart';
 import '../../chat/data/repositories/chat_repository.dart';
 import '../../chat/presentation/bloc/chat_bloc.dart';
+// Notifications
+import '../../notifications/data/datasources/notification_local_datasource.dart';
+import '../../notifications/data/datasources/notification_remote_datasource.dart';
+import '../../notifications/data/repositories/notification_repository.dart';
+import '../../notifications/presentation/bloc/notification_bloc.dart';
+import 'package:http/http.dart' as http;
 
 final GetIt sl = GetIt.instance;
 
@@ -115,5 +121,30 @@ Future<void> initializeDependencies() async {
   
   sl.registerFactory<ChatBloc>(
     () => ChatBloc(chatRepository: sl<ChatRepository>()),
+  // Notifications feature
+  sl.registerLazySingleton<http.Client>(
+    () => http.Client(),
+  );
+
+  sl.registerLazySingleton<NotificationDatabase>(
+    () => NotificationDatabase(),
+  );
+
+  sl.registerLazySingleton<NotificationRemoteDataSource>(
+    () => NotificationRemoteDataSource(
+      client: sl<http.Client>(),
+      storage: sl<SecureStorageService>(),
+    ),
+  );
+
+  sl.registerLazySingleton<NotificationRepository>(
+    () => NotificationRepository(
+      remoteDataSource: sl<NotificationRemoteDataSource>(),
+      localDataSource: sl<NotificationDatabase>(),
+    ),
+  );
+
+  sl.registerFactory<NotificationBloc>(
+    () => NotificationBloc(repository: sl<NotificationRepository>()),
   );
 }

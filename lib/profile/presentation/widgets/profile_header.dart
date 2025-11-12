@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
+import '../../../app/routes/route_names.dart';
 
 /// Profile header with title and notifications icon
 class ProfileHeader extends StatelessWidget {
@@ -30,7 +31,8 @@ class ProfileHeader extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: IconButton(
                 onPressed: onNotificationTap ?? () {
-                  // Default placeholder action
+                  // Navigate to notifications page
+                  Navigator.pushNamed(context, RouteNames.notifications);
                 },
                 icon: const Icon(
                   Icons.notifications,

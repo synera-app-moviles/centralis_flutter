@@ -31,8 +31,11 @@ class ApiConstants {
   static const String chatGroupMembers = '/groups/{groupId}/members';
   static const String chatGroupVisibility = '/groups/{groupId}/visibility';
 
-  //TODO: endpoints notifications
-  
+  // Notification endpoints
+  static const String notifications = '/notifications';
+  static const String notificationById = '/notifications/{notificationId}';
+  static const String notificationsByUser = '/notifications/{userId}';
+
   // Request timeouts
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
