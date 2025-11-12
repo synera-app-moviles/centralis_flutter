@@ -26,9 +26,24 @@ class NotificationDatabase {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  /// Upgrade the database schema
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Check if the recipientIds column exists
+      final tables = await db.rawQuery("PRAGMA table_info(notifications)");
+      final hasRecipientIds = tables.any((col) => col['name'] == 'recipientIds');
+
+      if (!hasRecipientIds) {
+        // Add recipientIds column if it doesn't exist
+        await db.execute('ALTER TABLE notifications ADD COLUMN recipientIds TEXT NOT NULL DEFAULT ""');
+      }
+    }
   }
 
   /// Create the notifications table
@@ -75,42 +90,79 @@ class NotificationDatabase {
 
   /// Get all notifications for a user
   Future<List<NotificationModel>> getNotificationsByUser(String userId) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'notifications',
-      where: 'recipientIds LIKE ?',
-      whereArgs: ['%$userId%'], // Check if userId is in the recipientIds list
-      orderBy: 'createdAt DESC',
-    );
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'notifications',
+        where: 'recipientIds LIKE ?',
+        whereArgs: ['%$userId%'], // Check if userId is in the recipientIds list
+        orderBy: 'createdAt DESC',
+      );
 
-    return List.generate(maps.length, (i) {
-      return NotificationModel.fromMap(maps[i]);
-    });
+      return List.generate(maps.length, (i) {
+        return NotificationModel.fromMap(maps[i]);
+      });
+    } catch (e) {
+      // If there's a schema error, recreate the database
+      if (e.toString().contains('no such column')) {
+        await _recreateDatabase();
+        return [];
+      }
+      rethrow;
+    }
+  }
+
+  /// Recreate the database (drop and create new)
+  Future<void> _recreateDatabase() async {
+    try {
+      String path = join(await getDatabasesPath(), 'centralis_notifications.db');
+      await deleteDatabase(path);
+      _database = null;
+      await database; // This will recreate the database
+    } catch (e) {
+      print('Error recreating database: $e');
+    }
   }
 
   /// Get unread notifications for a user
   Future<List<NotificationModel>> getUnreadNotifications(String userId) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'notifications',
-      where: 'recipientIds LIKE ? AND status != ?',
-      whereArgs: ['%$userId%', 'READ'],
-      orderBy: 'createdAt DESC',
-    );
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'notifications',
+        where: 'recipientIds LIKE ? AND status != ?',
+        whereArgs: ['%$userId%', 'READ'],
+        orderBy: 'createdAt DESC',
+      );
 
-    return List.generate(maps.length, (i) {
-      return NotificationModel.fromMap(maps[i]);
-    });
+      return List.generate(maps.length, (i) {
+        return NotificationModel.fromMap(maps[i]);
+      });
+    } catch (e) {
+      if (e.toString().contains('no such column')) {
+        await _recreateDatabase();
+        return [];
+      }
+      rethrow;
+    }
   }
 
   /// Get unread notification count
   Future<int> getUnreadCount(String userId) async {
-    final db = await database;
-    final result = await db.rawQuery(
-      'SELECT COUNT(*) as count FROM notifications WHERE recipientIds LIKE ? AND status != ?',
-      ['%$userId%', 'READ'],
-    );
-    return Sqflite.firstIntValue(result) ?? 0;
+    try {
+      final db = await database;
+      final result = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM notifications WHERE recipientIds LIKE ? AND status != ?',
+        ['%$userId%', 'READ'],
+      );
+      return Sqflite.firstIntValue(result) ?? 0;
+    } catch (e) {
+      if (e.toString().contains('no such column')) {
+        await _recreateDatabase();
+        return 0;
+      }
+      rethrow;
+    }
   }
 
   /// Mark a notification as read
@@ -126,13 +178,21 @@ class NotificationDatabase {
 
   /// Mark all notifications as read for a user
   Future<void> markAllAsRead(String userId) async {
-    final db = await database;
-    await db.update(
-      'notifications',
-      {'status': 'READ'},
-      where: 'recipientIds LIKE ?',
-      whereArgs: ['%$userId%'],
-    );
+    try {
+      final db = await database;
+      await db.update(
+        'notifications',
+        {'status': 'READ'},
+        where: 'recipientIds LIKE ?',
+        whereArgs: ['%$userId%'],
+      );
+    } catch (e) {
+      if (e.toString().contains('no such column')) {
+        await _recreateDatabase();
+      } else {
+        rethrow;
+      }
+    }
   }
 
   /// Delete a notification
@@ -147,12 +207,20 @@ class NotificationDatabase {
 
   /// Delete all notifications for a user
   Future<void> deleteAllNotifications(String userId) async {
-    final db = await database;
-    await db.delete(
-      'notifications',
-      where: 'recipientIds LIKE ?',
-      whereArgs: ['%$userId%'],
-    );
+    try {
+      final db = await database;
+      await db.delete(
+        'notifications',
+        where: 'recipientIds LIKE ?',
+        whereArgs: ['%$userId%'],
+      );
+    } catch (e) {
+      if (e.toString().contains('no such column')) {
+        await _recreateDatabase();
+      } else {
+        rethrow;
+      }
+    }
   }
 
   /// Clear all data from the database (for testing)
