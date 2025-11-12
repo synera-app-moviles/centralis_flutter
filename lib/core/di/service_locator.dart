@@ -1,6 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 // Core
 import '../storage/secure_storage_service.dart';
 import '../network/api_client.dart';
@@ -23,7 +23,6 @@ import '../../events/data/datasources/event_remote_datasource.dart';
 import '../../events/data/repositories/event_repository.dart';
 import '../../events/presentation/bloc/event_bloc.dart';
 
-
 final GetIt sl = GetIt.instance;
 
 Future<void> initializeDependencies() async {
@@ -35,7 +34,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<SecureStorageService>(
     () => SecureStorageService(),
   );
-  
+
   sl.registerLazySingleton<ApiClient>(
     () => ApiClient(
       baseUrl: ApiConstants.baseUrl,
@@ -48,22 +47,26 @@ Future<void> initializeDependencies() async {
     () => CloudinaryService(),
   );
 
+  final sharedPreferences = await SharedPreferences.getInstance();
+  sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+
+
   // IAM feature
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
-  
+
   sl.registerLazySingleton<AuthLocalDataSource>(
     () => AuthLocalDataSourceImpl(storage: sl<SecureStorageService>()),
   );
-  
+
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
       remoteDataSource: sl<AuthRemoteDataSource>(),
       localDataSource: sl<AuthLocalDataSource>(),
     ),
   );
-  
+
   sl.registerFactory<AuthBloc>(
     () => AuthBloc(authRepository: sl<AuthRepository>()),
   );
@@ -72,40 +75,31 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<ProfileRemoteDataSource>(
     () => ProfileRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
-  
+
   sl.registerLazySingleton<ProfileRepository>(
     () => ProfileRepositoryImpl(
       remoteDataSource: sl<ProfileRemoteDataSource>(),
     ),
   );
-  
+
   sl.registerFactory<ProfileBloc>(
     () => ProfileBloc(profileRepository: sl<ProfileRepository>()),
   );
 
-   // Eventos feature
+// ==================== Events ====================
 
+// Data sources
   sl.registerLazySingleton<EventRemoteDataSource>(
-     () => EventRemoteDataSourceImpl(
-       apiClient: sl<ApiClient>(),
-       storage: sl<SecureStorageService>(),
-     ),
+        () => EventRemoteDataSourceImpl(client: sl<ApiClient>()),
   );
 
+// Repositories
   sl.registerLazySingleton<EventRepository>(
-     () => EventRepositoryImpl(
-       remoteDataSource: sl<EventRemoteDataSource>(),
-     ),
+        () => EventRepositoryImpl(remoteDataSource: sl<EventRemoteDataSource>()),
   );
 
+// BLoC
   sl.registerFactory<EventBloc>(
-     () => EventBloc(repository: sl<EventRepository>()),
+        () => EventBloc(repository: sl<EventRepository>()),
   );
-
-
-
-
-
-
-
 }

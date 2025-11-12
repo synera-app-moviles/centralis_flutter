@@ -1,14 +1,15 @@
+// lib/events/data/repositories/event_repository.dart
 import '../datasources/event_remote_datasource.dart';
-import '../models/create_event_request.dart';
 import '../models/event_model.dart';
+import '../models/create_event_request.dart';
 import '../models/update_event_request.dart';
 
 abstract class EventRepository {
   Future<List<EventModel>> getEvents({String? userId, String? filterType});
   Future<EventModel> getEventById(String eventId);
   Future<List<EventModel>> getEventsCalendar({String? userId});
-  Future<EventModel> createEvent(CreateEventRequest request);
-  Future<EventModel> updateEvent(String eventId, UpdateEventRequest request);
+  Future<void> createEvent(CreateEventRequest request);
+  Future<void> updateEvent(String eventId, UpdateEventRequest request);
   Future<void> deleteEvent(String eventId);
 }
 
@@ -19,10 +20,7 @@ class EventRepositoryImpl implements EventRepository {
 
   @override
   Future<List<EventModel>> getEvents({String? userId, String? filterType}) async {
-    return await remoteDataSource.getEvents(
-      userId: userId,
-      filterType: filterType,
-    );
+    return await remoteDataSource.getEvents(userId: userId, filterType: filterType);
   }
 
   @override
@@ -36,13 +34,13 @@ class EventRepositoryImpl implements EventRepository {
   }
 
   @override
-  Future<EventModel> createEvent(CreateEventRequest request) async {
-    return await remoteDataSource.createEvent(request);
+  Future<void> createEvent(CreateEventRequest request) async {
+    await remoteDataSource.createEvent(request);
   }
 
   @override
-  Future<EventModel> updateEvent(String eventId, UpdateEventRequest request) async {
-    return await remoteDataSource.updateEvent(eventId, request);
+  Future<void> updateEvent(String eventId, UpdateEventRequest request) async {
+    await remoteDataSource.updateEvent(eventId, request);
   }
 
   @override

@@ -1,40 +1,26 @@
-import 'package:equatable/equatable.dart';
-
-class CreateEventRequest extends Equatable {
+class CreateEventRequest {
   final String title;
-  final String? description;
+  final String description;
   final String date;
   final String? location;
-  final List<String>? recipientIds;
-  final String? createdBy;
+  final List<String> recipientIds;
+  final String createdBy;
 
   const CreateEventRequest({
     required this.title,
-    this.description,
+    required this.description,
     required this.date,
     this.location,
-    this.recipientIds,
-    this.createdBy,
+    required this.recipientIds,
+    required this.createdBy,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'description': description,
-      'date': date,
-      'location': location,
-      'recipientIds': recipientIds,
-      'createdBy': createdBy,
-    };
-  }
-
-  @override
-  List<Object?> get props => [
-        title,
-        description,
-        date,
-        location,
-        recipientIds,
-        createdBy,
-      ];
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'description': description,
+        'date': date,
+        if (location != null) 'location': location,
+        'recipientIds': recipientIds,
+        'createdBy': createdBy,
+      };
 }
