@@ -134,24 +134,6 @@ class ApiClient {
     }
   }
 
-  Future<http.Response> delete(String endpoint, {bool requireAuth = true}) async {
-    try {
-      final url = Uri.parse('$baseUrl$endpoint');
-      final headers = await _buildHeaders(requireAuth: requireAuth);
-      
-      final response = await http.delete(
-        url,
-        headers: headers,
-      ).timeout(ApiConstants.connectTimeout);
-
-      return _handleResponse(response);
-    } on SocketException {
-      throw NetworkException('No internet connection');
-    } on TimeoutException {
-      throw NetworkException('Request timeout');
-    }
-  }
-
   // Response handler with error mapping
   http.Response _handleResponse(http.Response response) {
     print('🌐 ApiClient: Response status: ${response.statusCode}');

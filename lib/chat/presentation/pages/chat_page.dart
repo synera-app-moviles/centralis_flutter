@@ -80,24 +80,29 @@ class _ChatPageState extends State<ChatPage> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: SafeArea(
-        child: Row(
+        child: Stack(
           children: [
-            const Spacer(),
-            const Text(
-              'Chats',
-              style: TextStyle(
-                color: ChatColors.titleColor,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+
+            Center(
+              child: const Text(
+                'Chats',
+                style: TextStyle(
+                  color: ChatColors.titleColor,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            const Spacer(),
-            IconButton(
-              onPressed: _onCreateGroupPressed,
-              icon: const Icon(
-                Icons.add,
-                color: ChatColors.textPrimary,
-                size: 28,
+
+            Positioned(
+              right: 0,
+              child: IconButton(
+                onPressed: _onCreateGroupPressed,
+                icon: const Icon(
+                  Icons.add,
+                  color: ChatColors.textPrimary,
+                  size: 28,
+                ),
               ),
             ),
           ],

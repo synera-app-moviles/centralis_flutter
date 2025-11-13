@@ -116,6 +116,7 @@ Future<void> initializeDependencies() async {
 // BLoC
   sl.registerFactory<EventBloc>(
         () => EventBloc(repository: sl<EventRepository>()),
+  );
   // Announcements feature
   sl.registerLazySingleton<AnnouncementRemoteDataSource>(
     () => AnnouncementRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
@@ -144,6 +145,7 @@ Future<void> initializeDependencies() async {
   
   sl.registerFactory<ChatBloc>(
     () => ChatBloc(chatRepository: sl<ChatRepository>()),
+  );
   // Notifications feature
   sl.registerLazySingleton<http.Client>(
     () => http.Client(),
