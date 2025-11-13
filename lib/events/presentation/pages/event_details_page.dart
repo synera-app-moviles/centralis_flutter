@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/constants/api_constants.dart';
 import '../bloc/event_bloc.dart';
 import '../bloc/event_event.dart';
 import '../bloc/event_state.dart';
@@ -14,10 +19,77 @@ class EventDetailsPage extends StatefulWidget {
 }
 
 class _EventDetailsPageState extends State<EventDetailsPage> {
+  String? _loadedForEventId;
+  bool _loadingAttendees = false;
+  final List<Map<String, String?>> _attendees = [];
+
   @override
   void initState() {
     super.initState();
     context.read<EventBloc>().add(LoadEventById(widget.eventId));
+  }
+
+  Future<void> _fetchAttendees(List<String> ids) async {
+    if (!mounted) return;
+    if (ids.isEmpty) {
+      if (mounted) setState(() {
+        _attendees.clear();
+        _loadingAttendees = false;
+      });
+      return;
+    }
+
+    if (mounted) setState(() {
+      _loadingAttendees = true;
+      _attendees.clear();
+    });
+
+    try {
+      for (final id in ids) {
+        try {
+          final endpoint = ApiConstants.profileById.replaceAll('{id}', id);
+          final resp = await sl<ApiClient>().get(endpoint, requireAuth: true);
+          final data = jsonDecode(resp.body) as Map<String, dynamic>;
+
+          final first = (data['firstName'] ?? data['first_name'])?.toString();
+          final last = (data['lastName'] ?? data['last_name'])?.toString();
+          final fullFromParts = ((first ?? '') + ' ' + (last ?? '')).trim();
+          final rawName = (data['fullName'] ??
+                  data['name'] ??
+                  (fullFromParts.isNotEmpty ? fullFromParts : null) ??
+                  data['username'] ??
+                  data['profileId'] ??
+                  data['id'])
+              ?.toString();
+          final name = (rawName != null && rawName.isNotEmpty) ? rawName : 'Usuario';
+          final avatar = (data['photoUrl'] ?? data['avatar'] ?? data['imageUrl'] ?? data['avatarUrl'])?.toString();
+
+          _attendees.add({
+            'id': id,
+            'name': name,
+            'avatar': avatar,
+          });
+        } catch (e) {
+          _attendees.add({
+            'id': id,
+            'name': 'Usuario',
+            'avatar': null,
+          });
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error fetching attendees: $e');
+    } finally {
+      if (mounted) setState(() {
+        _loadingAttendees = false;
+      });
+    }
+  }
+
+  bool _shouldFetchAttendees(List<String> newIds) {
+    final currentIds = _attendees.map((a) => a['id']).whereType<String>().toSet();
+    final incomingIds = newIds.toSet();
+    return !setEquals(currentIds, incomingIds);
   }
 
   @override
@@ -50,6 +122,14 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
               SnackBar(content: Text(state.error)),
             );
           }
+
+          if (state is EventLoaded) {
+            final event = state.event;
+            if (_loadedForEventId != event.id || _shouldFetchAttendees(event.recipientIds)) {
+              _loadedForEventId = event.id;
+              _fetchAttendees(event.recipientIds);
+            }
+          }
         },
         builder: (context, state) {
           if (state is EventLoading) {
@@ -57,6 +137,7 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
           }
           if (state is EventLoaded) {
             final event = state.event;
+
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -70,61 +151,76 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
                   const SizedBox(height: 16),
                   _buildInfoCard('Location', event.location ?? 'Sin ubicación'),
                   const SizedBox(height: 16),
-                  _buildInfoCard('Attendees', '${event.recipientIds.length}'),
+                  _buildAttendeesSection(event),
                   const SizedBox(height: 24),
-                  // Botones: Edit y Delete en una fila, juntos y alineados a la derecha
+                  // language: dart
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      SizedBox(
-                        width: 150,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final result = await Navigator.pushNamed(
-                              context,
-                              '/events/update',
-                              arguments: event.id,
-                            );
-                            if (result == true) {
-                              context.read<EventBloc>().add(LoadEventById(widget.eventId));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Event updated successfully')),
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final result = await Navigator.pushNamed(
+                                context,
+                                '/events/update',
+                                arguments: event.id,
                               );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFA68FCC),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: const Text(
-                            'Edit',
-                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                              if (result == true) {
+                                context.read<EventBloc>().add(LoadEventById(widget.eventId));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Event updated successfully')),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFA68FCC),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Align(
+                              alignment: Alignment.center,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: const Text(
+                                  'Edit',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 150,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => DeleteEventDialog(
-                                onConfirm: () {
-                                  context.read<EventBloc>().add(DeleteEvent(widget.eventId));
-                                },
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (ctx) => DeleteEventDialog(
+                                  onConfirm: () {
+                                    context.read<EventBloc>().add(DeleteEvent(widget.eventId));
+                                  },
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Align(
+                              alignment: Alignment.center,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: const Text(
+                                  'Delete',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
                               ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: const Text(
-                            'Delete',
-                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
                       ),
@@ -145,6 +241,62 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
           }
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+
+  Widget _buildAttendeesSection(event) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF30214A),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Attendees',
+            style: TextStyle(
+              color: Color(0xFFA68FCC),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (_loadingAttendees)
+            const Center(child: CircularProgressIndicator(color: Color(0xFFA68FCC)))
+          else if (_attendees.isEmpty)
+            Text(
+              '${event.recipientIds.length} asistentes',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _attendees.length,
+              separatorBuilder: (_, __) => const Divider(color: Colors.white12),
+              itemBuilder: (context, index) {
+                final a = _attendees[index];
+                final avatar = a['avatar'];
+                final name = a['name'] ?? 'Usuario';
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                  leading: CircleAvatar(
+                    radius: 22,
+                    backgroundColor: const Color(0xFF30214A),
+                    backgroundImage: (avatar != null && avatar.isNotEmpty) ? NetworkImage(avatar) : null,
+                    child: (avatar == null || avatar.isEmpty)
+                        ? const Icon(Icons.person, color: Colors.white, size: 22)
+                        : null,
+                  ),
+                  title: Text(name, style: const TextStyle(color: Colors.white)),
+                );
+              },
+            ),
+        ],
       ),
     );
   }
