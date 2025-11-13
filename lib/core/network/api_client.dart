@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'package:http/http.dart' as http;
+
 import '../storage/secure_storage_service.dart';
 import '../error/exceptions.dart';
 import '../constants/api_constants.dart';
@@ -10,7 +11,7 @@ class ApiClient {
   final String baseUrl;
   final SecureStorageService _storage;
 
-  ApiClient({required this.baseUrl, required SecureStorageService storage})
+  ApiClient({required this.baseUrl, required SecureStorageService storage,})
       : _storage = storage;
 
   // Headers builder with JWT token
@@ -23,7 +24,6 @@ class ApiClient {
     if (requireAuth) {
       final token = await _storage.getToken();
       print('🔐 ApiClient: Token requerido. Token encontrado: ${token != null ? "✅ SÍ (${token.substring(0, 20)}...)" : "❌ NO"}');
-      
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
         print('🔐 ApiClient: Header Authorization agregado');
@@ -37,25 +37,26 @@ class ApiClient {
   }
 
   // Generic HTTP methods
-  Future<http.Response> post(String endpoint, {
+  Future<http.Response> post(
+    String endpoint, {
     Map<String, dynamic>? body,
     bool requireAuth = false,
   }) async {
     try {
       final url = Uri.parse('$baseUrl$endpoint');
       final headers = await _buildHeaders(requireAuth: requireAuth);
-      
+
       print('🚀 ApiClient POST: URL completa: $url');
       print('🚀 ApiClient POST: Headers: $headers');
       if (body != null) {
         final bodyString = jsonEncode(body);
         print('🚀 ApiClient POST: Body: $bodyString');
       }
-      
+
       final response = await http.post(
-        url,
-        headers: headers,
-        body: body != null ? jsonEncode(body) : null,
+          url,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null
       ).timeout(ApiConstants.connectTimeout);
 
       return _handleResponse(response);
@@ -66,19 +67,19 @@ class ApiClient {
     }
   }
 
-  Future<http.Response> get(String endpoint, {bool requireAuth = false}) async {
+  Future<http.Response> get(String endpoint, {bool requireAuth = false,}) async {
     try {
       final url = Uri.parse('$baseUrl$endpoint');
       print('🌐 ApiClient GET: ${url.toString()}');
       print('🔐 ApiClient GET: Requiere auth: $requireAuth');
-      
+
       final headers = await _buildHeaders(requireAuth: requireAuth);
       print('📋 ApiClient GET: Headers: ${headers.keys.join(", ")}');
-      
+
       final response = await http.get(url, headers: headers).timeout(ApiConstants.connectTimeout);
       print('📡 ApiClient GET: Respuesta recibida - Status: ${response.statusCode}');
       print('📡 ApiClient GET: Respuesta body (primeros 200 chars): ${response.body.length > 200 ? response.body.substring(0, 200) + "..." : response.body}');
-      
+
       return _handleResponse(response);
     } on SocketException {
       print('❌ ApiClient GET: Error de conexión - No internet connection');
@@ -92,6 +93,7 @@ class ApiClient {
     }
   }
 
+  // PUT
   Future<http.Response> put(String endpoint, {
     Map<String, dynamic>? body,
     bool requireAuth = true,
@@ -99,11 +101,29 @@ class ApiClient {
     try {
       final url = Uri.parse('$baseUrl$endpoint');
       final headers = await _buildHeaders(requireAuth: requireAuth);
-      
+
       final response = await http.put(
-        url,
-        headers: headers,
-        body: body != null ? jsonEncode(body) : null,
+          url,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null)
+          .timeout(ApiConstants.connectTimeout);
+
+      return _handleResponse(response);
+    } on SocketException {
+      throw NetworkException('No internet connection');
+    } on TimeoutException {
+      throw NetworkException('Request timeout');
+    }
+  }
+
+  Future<http.Response> delete(String endpoint, {bool requireAuth = true,}) async {
+    try {
+      final url = Uri.parse('$baseUrl$endpoint');
+      final headers = await _buildHeaders(requireAuth: requireAuth);
+
+      final response = await http.delete(
+          url,
+          headers: headers
       ).timeout(ApiConstants.connectTimeout);
 
       return _handleResponse(response);
@@ -136,11 +156,10 @@ class ApiClient {
   http.Response _handleResponse(http.Response response) {
     print('🌐 ApiClient: Response status: ${response.statusCode}');
     print('🌐 ApiClient: Response body: ${response.body}');
-    
     switch (response.statusCode) {
       case 200:
       case 201:
-      case 204: // No Content - éxito para operaciones de eliminación
+      case 204: // No Content
         return response;
       case 400:
         throw BadRequestException(_getErrorMessage(response));
@@ -165,7 +184,7 @@ class ApiClient {
     try {
       final body = jsonDecode(response.body);
       return body['message'] ?? 'Unknown error';
-    } catch (e) {
+    } catch (_) {
       return 'Error parsing response';
     }
   }

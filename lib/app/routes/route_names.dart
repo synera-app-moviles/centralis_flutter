@@ -20,4 +20,9 @@ class RouteNames {
   static const String editProfile = '/editProfile';
   static const String notifications = '/notifications';
   static const String splash = '/splash';
+
+  // Event routes
+  static const String createEvent = '/events/create';
+  static const String updateEvent = '/events/update';
+  static const String eventDetails = '/events/details';
 }

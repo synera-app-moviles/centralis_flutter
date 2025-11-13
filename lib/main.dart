@@ -6,6 +6,7 @@ import 'app/routes/route_names.dart';
 import 'core/di/service_locator.dart';
 import 'iam/presentation/bloc/auth_bloc.dart';
 import 'profile/presentation/bloc/profile_bloc.dart';
+import 'events/presentation/bloc/event_bloc.dart';
 import 'chat/presentation/bloc/chat_bloc.dart';
 
 void main() async {
@@ -30,6 +31,7 @@ class CentralisApp extends StatelessWidget {
         BlocProvider<ProfileBloc>(
           create: (context) => sl<ProfileBloc>(),
         ),
+        BlocProvider<EventBloc>(create: (context) => sl<EventBloc>()),
         BlocProvider<ChatBloc>(
           create: (context) => sl<ChatBloc>(),
         ),
