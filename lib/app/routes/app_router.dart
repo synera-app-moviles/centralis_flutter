@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../chat/presentation/pages/pages.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../iam/presentation/pages/sign_in_page.dart';
 import '../../iam/presentation/pages/sign_up_page.dart';
 import '../../iam/presentation/pages/splash_page.dart';
@@ -6,6 +8,9 @@ import '../../profile/presentation/pages/edit_profile_page.dart';
 import '../../events/presentation/pages/create_event_page.dart';
 import '../../events/presentation/pages/update_event_page.dart';
 import '../../events/presentation/pages/event_details_page.dart';
+import '../../notifications/presentation/pages/notifications_page.dart';
+import '../../notifications/presentation/bloc/notification_bloc.dart';
+import '../../core/di/service_locator.dart';
 import '../navigation/main_navigation.dart';
 import 'route_names.dart';
 
@@ -75,6 +80,45 @@ class RouteGenerator {
           builder: (_) => EventDetailsPage(eventId: eventId),
         );
 
+
+      
+      // Chat specific routes
+      case RouteNames.chatDetail:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null && args.containsKey('groupId') && args.containsKey('groupName')) {
+          return MaterialPageRoute(
+            builder: (_) => ChatDetailView(
+              groupId: args['groupId'] as String,
+              groupName: args['groupName'] as String,
+            ),
+          );
+        }
+        return _errorRoute(settings.name);
+      
+      case RouteNames.createGroup:
+        return MaterialPageRoute(
+          builder: (_) => const CreateGroupView(),
+        );
+      
+      case RouteNames.editGroup:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null && args.containsKey('groupId')) {
+          return MaterialPageRoute(
+            builder: (_) => EditGroupView(
+              groupId: args['groupId'] as String,
+            ),
+          );
+        }
+        return _errorRoute(settings.name);
+      
+      // Notifications route
+      case RouteNames.notifications:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) => sl<NotificationBloc>(),
+            child: const NotificationsPage(),
+          ),
+        );
 
       // Route not found
       default:

@@ -157,15 +157,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               _isLoading = false;
             });
             
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Perfil actualizado exitosamente!'),
-                backgroundColor: CentralisColors.success,
-                duration: Duration(seconds: 2),
-              ),
-            );
-            
-            // Optional: Return after a short delay to allow user to see the updated data
+            // Return after a short delay to allow user to see the updated data
             Future.delayed(const Duration(seconds: 1), () {
               if (mounted) {
                 Navigator.pop(context, state.profile);

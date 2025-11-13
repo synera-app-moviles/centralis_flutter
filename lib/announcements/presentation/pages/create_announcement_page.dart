@@ -1,0 +1,286 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../shared/theme/colors.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../core/storage/secure_storage_service.dart';
+import '../../../shared/widgets/image_picker_widget.dart';
+import '../../../app/config/cloudinary_config.dart';
+import '../bloc/announcement_bloc.dart';
+import '../bloc/announcement_event.dart';
+import '../bloc/announcement_state.dart';
+import '../widgets/priority_selector.dart';
+import '../../data/models/priority.dart';
+
+class CreateAnnouncementPage extends StatefulWidget {
+  const CreateAnnouncementPage({super.key});
+
+  @override
+  State<CreateAnnouncementPage> createState() => _CreateAnnouncementPageState();
+}
+
+class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  Priority _selectedPriority = Priority.normal;
+  String? _selectedImageUrl;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => sl<AnnouncementBloc>(),
+      child: Scaffold(
+        backgroundColor: AnnouncementColors.background,
+        appBar: _buildAppBar(context),
+        body: BlocListener<AnnouncementBloc, AnnouncementState>(
+          listener: (context, state) {
+            if (state is AnnouncementCreated) {
+              // Regresar a la página anterior con señal para recargar
+              Navigator.pop(context, true);
+            } else if (state is AnnouncementError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error: ${state.message}'),
+                  backgroundColor: AnnouncementColors.error,
+                ),
+              );
+            }
+          },
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildForm(),
+                ),
+              ),
+              _buildPublishButton(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text(
+        "New Announcement",
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      backgroundColor: AnnouncementColors.background,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.close, color: Colors.white),
+        onPressed: () => Navigator.pop(context),
+      ),
+    );
+  }
+
+  Widget _buildForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Campo título
+        TextField(
+          controller: _titleController,
+          decoration: const InputDecoration(
+            hintText: 'Announcement Title',
+            hintStyle: TextStyle(color: AnnouncementColors.textSecondary),
+            filled: true,
+            fillColor: AnnouncementColors.cardBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: EdgeInsets.all(16),
+          ),
+          style: const TextStyle(color: Colors.white),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 16),
+        
+        // Campo descripción
+        TextField(
+          controller: _descriptionController,
+          maxLines: 6,
+          decoration: const InputDecoration(
+            hintText: 'Write the announcement details...',
+            hintStyle: TextStyle(color: AnnouncementColors.textSecondary),
+            filled: true,
+            fillColor: AnnouncementColors.cardBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: EdgeInsets.all(16),
+          ),
+          style: const TextStyle(color: Colors.white),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 16),
+        
+        // Selector de imagen
+        ImagePickerWidget(
+          imageType: ImageType.announcement,
+          currentImageUrl: _selectedImageUrl,
+          onImageUploaded: (imageUrl) {
+            setState(() {
+              _selectedImageUrl = imageUrl;
+            });
+          },
+          onImageRemoved: () {
+            setState(() {
+              _selectedImageUrl = null;
+            });
+          },
+          buttonText: 'Add Image',
+        ),
+        
+        // Preview de imagen seleccionada
+        if (_selectedImageUrl != null) ...[
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AnnouncementColors.primary.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(
+                _selectedImageUrl!,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: AnnouncementColors.cardBackground,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AnnouncementColors.primary),
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: AnnouncementColors.cardBackground,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.broken_image,
+                      color: AnnouncementColors.textSecondary,
+                      size: 48,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        
+        // Selector de prioridad
+        PrioritySelector(
+          selectedPriority: _selectedPriority,
+          onPriorityChanged: (priority) => setState(() => _selectedPriority = priority),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPublishButton() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      color: AnnouncementColors.background,
+      child: BlocBuilder<AnnouncementBloc, AnnouncementState>(
+        builder: (context, state) {
+          final isLoading = state is AnnouncementLoading;
+          
+          return SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: isLoading || !_canPublish() ? null : () => _publishAnnouncement(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AnnouncementColors.primary,
+                disabledBackgroundColor: AnnouncementColors.textSecondary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: isLoading 
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Publish Announcement',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  bool _canPublish() {
+    return _titleController.text.isNotEmpty && 
+           _descriptionController.text.isNotEmpty;
+  }
+
+  void _publishAnnouncement(BuildContext context) async {
+    // Obtener el userId del usuario actual
+    final storageService = sl<SecureStorageService>();
+    final userId = await storageService.getUserId();
+    
+    print('🔍 CreateAnnouncement: Obteniendo userId del storage...');
+    print('🔍 CreateAnnouncement: userId obtenido: $userId');
+    
+    if (userId == null) {
+      print('❌ CreateAnnouncement: No se pudo obtener userId del storage');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: No se pudo obtener el ID del usuario'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    print('✅ CreateAnnouncement: Creando anuncio con userId: $userId');
+    context.read<AnnouncementBloc>().add(
+      AnnouncementCreateRequested(
+        title: _titleController.text,
+        description: _descriptionController.text,
+        image: _selectedImageUrl,
+        priority: _selectedPriority,
+        createdBy: userId,
+      ),
+    );
+  }
+}

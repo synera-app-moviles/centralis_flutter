@@ -11,8 +11,14 @@ class RouteNames {
   static const String chat = '/chat';
   static const String profile = '/profile';
   
+  // Chat specific routes
+  static const String chatDetail = '/chat/detail';
+  static const String createGroup = '/chat/create-group';
+  static const String editGroup = '/chat/edit-group';
+  
   // Secondary routes
   static const String editProfile = '/editProfile';
+  static const String notifications = '/notifications';
   static const String splash = '/splash';
 
   // Event routes

@@ -11,17 +11,34 @@ class ApiConstants {
   static const String profileById = '/profiles/{id}';
   static const String profileByUser = '/profiles/user/{userId}';
 
-  //TODO: endpoints announcements
+  // Announcement endpoints
+  static const String announcements = '/announcements';
+  static const String announcementById = '/announcements/{announcementId}';
+  static const String announcementsByPriority = '/announcements/priority/{priority}';
+  static const String announcementsByCreator = '/announcements/creator/{createdBy}';
+  static const String announcementComments = '/announcements/{announcementId}/comments';
+  static const String commentById = '/comments/{commentId}';
 
   //TODO: endpoints events
   static const String events = '/events';
   static const String eventById = '/events/{eventId}';
   static const String eventsCalendar = '/events/calendar';
 
-  //TODO: endpoints chat
+  // Chat endpoints
+  static const String chatGroups = '/groups';
+  static const String chatGroupById = '/groups/{groupId}';
+  static const String chatGroupsByUser = '/groups';
+  static const String chatGroupsByVisibility = '/groups/visibility/{visibility}';
+  static const String chatGroupMessages = '/groups/{groupId}/messages';
+  static const String chatMessageById = '/groups/{groupId}/messages/{messageId}';
+  static const String chatGroupMembers = '/groups/{groupId}/members';
+  static const String chatGroupVisibility = '/groups/{groupId}/visibility';
 
-  //TODO: endpoints notifications
-  
+  // Notification endpoints
+  static const String notifications = '/notifications';
+  static const String notificationById = '/notifications/{notificationId}';
+  static const String notificationsByUser = '/notifications/{userId}';
+
   // Request timeouts
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);

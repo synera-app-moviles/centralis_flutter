@@ -22,6 +22,21 @@ import '../../profile/presentation/bloc/profile_bloc.dart';
 import '../../events/data/datasources/event_remote_datasource.dart';
 import '../../events/data/repositories/event_repository.dart';
 import '../../events/presentation/bloc/event_bloc.dart';
+// Announcements
+import '../../announcements/data/datasources/announcement_remote_datasource.dart';
+import '../../announcements/data/repositories/announcement_repository.dart';
+import '../../announcements/presentation/bloc/announcement_bloc.dart';
+
+// Chat
+import '../../chat/data/datasources/chat_remote_datasource.dart';
+import '../../chat/data/repositories/chat_repository.dart';
+import '../../chat/presentation/bloc/chat_bloc.dart';
+// Notifications
+import '../../notifications/data/datasources/notification_local_datasource.dart';
+import '../../notifications/data/datasources/notification_remote_datasource.dart';
+import '../../notifications/data/repositories/notification_repository.dart';
+import '../../notifications/presentation/bloc/notification_bloc.dart';
+import 'package:http/http.dart' as http;
 
 final GetIt sl = GetIt.instance;
 
@@ -101,5 +116,58 @@ Future<void> initializeDependencies() async {
 // BLoC
   sl.registerFactory<EventBloc>(
         () => EventBloc(repository: sl<EventRepository>()),
+  // Announcements feature
+  sl.registerLazySingleton<AnnouncementRemoteDataSource>(
+    () => AnnouncementRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+  
+  sl.registerLazySingleton<AnnouncementRepository>(
+    () => AnnouncementRepositoryImpl(
+      remoteDataSource: sl<AnnouncementRemoteDataSource>(),
+    ),
+  );
+  
+  sl.registerFactory<AnnouncementBloc>(
+    () => AnnouncementBloc(announcementRepository: sl<AnnouncementRepository>()),
+  );
+
+  // Chat feature
+  sl.registerLazySingleton<ChatRemoteDataSource>(
+    () => ChatRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+  
+  sl.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(
+      remoteDataSource: sl<ChatRemoteDataSource>(),
+    ),
+  );
+  
+  sl.registerFactory<ChatBloc>(
+    () => ChatBloc(chatRepository: sl<ChatRepository>()),
+  // Notifications feature
+  sl.registerLazySingleton<http.Client>(
+    () => http.Client(),
+  );
+
+  sl.registerLazySingleton<NotificationDatabase>(
+    () => NotificationDatabase(),
+  );
+
+  sl.registerLazySingleton<NotificationRemoteDataSource>(
+    () => NotificationRemoteDataSource(
+      client: sl<http.Client>(),
+      storage: sl<SecureStorageService>(),
+    ),
+  );
+
+  sl.registerLazySingleton<NotificationRepository>(
+    () => NotificationRepository(
+      remoteDataSource: sl<NotificationRemoteDataSource>(),
+      localDataSource: sl<NotificationDatabase>(),
+    ),
+  );
+
+  sl.registerFactory<NotificationBloc>(
+    () => NotificationBloc(repository: sl<NotificationRepository>()),
   );
 }
