@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/event_bloc.dart';
 import '../bloc/event_event.dart';
 import '../bloc/event_state.dart';
+import '../widgets/delete_event_dialog.dart';
 
 class EventDetailsPage extends StatefulWidget {
   final String eventId;
@@ -42,6 +43,8 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
               SnackBar(content: Text(state.message)),
             );
             Navigator.pop(context, true);
+          } else if (state is EventDeletedSuccess) {
+            Navigator.pop(context, true);
           } else if (state is EventError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.error)),
@@ -69,32 +72,63 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
                   const SizedBox(height: 16),
                   _buildInfoCard('Attendees', '${event.recipientIds.length}'),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final result = await Navigator.pushNamed(
-                          context,
-                          '/events/update',
-                          arguments: event.id,
-                        );
-                        if (result == true) {
-                          context.read<EventBloc>().add(LoadEventById(widget.eventId));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Event updated successfully')),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFA68FCC),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                  // Botones: Edit y Delete en una fila, juntos y alineados a la derecha
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      SizedBox(
+                        width: 150,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final result = await Navigator.pushNamed(
+                              context,
+                              '/events/update',
+                              arguments: event.id,
+                            );
+                            if (result == true) {
+                              context.read<EventBloc>().add(LoadEventById(widget.eventId));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Event updated successfully')),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFA68FCC),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            'Edit',
+                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
-                      child: const Text(
-                        'Edit',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 150,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => DeleteEventDialog(
+                                onConfirm: () {
+                                  context.read<EventBloc>().add(DeleteEvent(widget.eventId));
+                                },
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),

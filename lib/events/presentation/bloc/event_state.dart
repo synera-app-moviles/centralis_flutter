@@ -39,29 +39,32 @@ class EventOperationSuccess extends EventState {
   List<Object?> get props => [message];
 }
 
-
 class EventCreatedSuccess extends EventState {
+  final EventModel createdEvent;
   final String message;
-  const EventCreatedSuccess(this.message);
+
+  EventCreatedSuccess(this.createdEvent, {this.message = 'Event created successfully'});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [createdEvent, message];
 }
 
 class EventUpdatedSuccess extends EventState {
+  final EventModel updatedEvent;
   final String message;
-  const EventUpdatedSuccess(this.message);
+
+  EventUpdatedSuccess(this.updatedEvent, {this.message = 'Event updated successfully'});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [updatedEvent, message];
 }
 
 class EventDeletedSuccess extends EventState {
-  final String message;
-  const EventDeletedSuccess(this.message);
+  final String eventId;
+  const EventDeletedSuccess(this.eventId);
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [eventId];
 }
 
 class EventError extends EventState {

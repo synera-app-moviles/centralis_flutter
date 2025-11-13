@@ -1,3 +1,4 @@
+// dart
 import '../datasources/event_remote_datasource.dart';
 import '../models/event_model.dart';
 import '../models/create_event_request.dart';
@@ -7,8 +8,8 @@ abstract class EventRepository {
   Future<List<EventModel>> getEvents({String? userId, String? filterType});
   Future<EventModel> getEventById(String eventId);
   Future<List<EventModel>> getEventsCalendar({String? userId});
-  Future<void> createEvent(CreateEventRequest request);
-  Future<void> updateEvent(String eventId, UpdateEventRequest request);
+  Future<EventModel> createEvent(CreateEventRequest request);
+  Future<EventModel> updateEvent(String eventId, UpdateEventRequest request);
   Future<void> deleteEvent(String eventId);
 }
 
@@ -34,13 +35,13 @@ class EventRepositoryImpl implements EventRepository {
   }
 
   @override
-  Future<void> createEvent(CreateEventRequest request) async {
-    await _remote.createEvent(request);
+  Future<EventModel> createEvent(CreateEventRequest request) async {
+    return await _remote.createEvent(request);
   }
 
   @override
-  Future<void> updateEvent(String eventId, UpdateEventRequest request) async {
-    await _remote.updateEvent(eventId, request);
+  Future<EventModel> updateEvent(String eventId, UpdateEventRequest request) async {
+    return await _remote.updateEvent(eventId, request);
   }
 
   @override

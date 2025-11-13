@@ -52,8 +52,8 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   Future<void> _onCreateEvent(CreateEvent event, Emitter<EventState> emit) async {
     emit(EventLoading());
     try {
-      await repository.createEvent(event.request);
-      emit(const EventCreatedSuccess('Event created successfully'));
+      final created = await repository.createEvent(event.request);
+      emit(EventCreatedSuccess(created));
     } catch (e) {
       emit(EventError(e.toString()));
     }
@@ -62,8 +62,8 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   Future<void> _onUpdateEvent(UpdateEvent event, Emitter<EventState> emit) async {
     emit(EventLoading());
     try {
-      await repository.updateEvent(event.eventId, event.request);
-      emit(const EventUpdatedSuccess('Event updated successfully'));
+      final updated = await repository.updateEvent(event.eventId, event.request);
+      emit(EventUpdatedSuccess(updated));
     } catch (e) {
       emit(EventError(e.toString()));
     }
@@ -73,7 +73,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     emit(EventLoading());
     try {
       await repository.deleteEvent(event.eventId);
-      emit(const EventDeletedSuccess('Event deleted successfully'));
+      emit(EventDeletedSuccess(event.eventId));
     } catch (e) {
       emit(EventError(e.toString()));
     }
