@@ -89,3 +89,23 @@ class EventViewRegistered extends DashboardEvent {
 class DashboardCleared extends DashboardEvent {
   const DashboardCleared();
 }
+
+/// Get announcement statistics
+class AnnouncementStatsRequested extends DashboardEvent {
+  final String announcementId;
+
+  const AnnouncementStatsRequested(this.announcementId);
+
+  @override
+  List<Object?> get props => [announcementId];
+}
+
+/// Get event statistics
+class EventStatsRequested extends DashboardEvent {
+  final String eventId;
+
+  const EventStatsRequested(this.eventId);
+
+  @override
+  List<Object?> get props => [eventId];
+}

@@ -68,6 +68,7 @@ class _AnnouncementListViewState extends State<_AnnouncementListView>
         backgroundColor: AnnouncementColors.background,
         elevation: 0,
         centerTitle: true,
+        automaticallyImplyLeading: false, // Remove back button for main page
         actions: [
           IconButton(
             icon: const Icon(Icons.download, color: Colors.white),

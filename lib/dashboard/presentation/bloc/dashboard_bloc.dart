@@ -19,6 +19,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     on<AnnouncementViewRegistered>(_onAnnouncementViewRegistered);
     on<EventViewRegistered>(_onEventViewRegistered);
     on<DashboardCleared>(_onDashboardCleared);
+    on<AnnouncementStatsRequested>(_onAnnouncementStatsRequested);
+    on<EventStatsRequested>(_onEventStatsRequested);
   }
 
   Future<void> _onSummaryRequested(
@@ -100,14 +102,44 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     AnnouncementViewersRequested event,
     Emitter<DashboardState> emit,
   ) async {
-    emit(DashboardLoading());
+    // Check if we already have combined analytics state
+    if (state is ContentAnalyticsLoaded) {
+      final currentState = state as ContentAnalyticsLoaded;
+      if (currentState.isAnnouncement) {
+        emit(currentState.copyWith(isViewersRefreshing: true));
+      } else {
+        emit(DashboardLoading());
+      }
+    } else if (state is AnnouncementViewersLoaded) {
+      final currentState = state as AnnouncementViewersLoaded;
+      if (currentState.announcementId == event.announcementId) {
+        emit(currentState.copyWith(isRefreshing: true));
+      } else {
+        emit(DashboardLoading());
+      }
+    } else {
+      emit(DashboardLoading());
+    }
+
     try {
       final viewers = await _dashboardRepository.getAnnouncementViewers(event.announcementId);
-      emit(AnnouncementViewersLoaded(
-        announcementId: event.announcementId,
-        viewers: viewers,
-      ));
+      
+      // Check if we have stats to combine with
+      if (state is ContentAnalyticsLoaded) {
+        final currentState = state as ContentAnalyticsLoaded;
+        emit(currentState.copyWith(
+          viewers: viewers,
+          isViewersRefreshing: false,
+        ));
+      } else {
+        emit(ContentAnalyticsLoaded(
+          viewers: viewers,
+          isAnnouncement: true,
+          isViewersRefreshing: false,
+        ));
+      }
     } catch (e) {
+      print('🚨 Dashboard: Error loading announcement viewers: ${e.toString()}');
       emit(DashboardError('Failed to load announcement viewers: ${e.toString()}'));
     }
   }
@@ -116,14 +148,44 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     EventViewersRequested event,
     Emitter<DashboardState> emit,
   ) async {
-    emit(DashboardLoading());
+    // Check if we already have combined analytics state
+    if (state is ContentAnalyticsLoaded) {
+      final currentState = state as ContentAnalyticsLoaded;
+      if (!currentState.isAnnouncement) {
+        emit(currentState.copyWith(isViewersRefreshing: true));
+      } else {
+        emit(DashboardLoading());
+      }
+    } else if (state is EventViewersLoaded) {
+      final currentState = state as EventViewersLoaded;
+      if (currentState.eventId == event.eventId) {
+        emit(currentState.copyWith(isRefreshing: true));
+      } else {
+        emit(DashboardLoading());
+      }
+    } else {
+      emit(DashboardLoading());
+    }
+
     try {
       final viewers = await _dashboardRepository.getEventViewers(event.eventId);
-      emit(EventViewersLoaded(
-        eventId: event.eventId,
-        viewers: viewers,
-      ));
+      
+      // Check if we have stats to combine with
+      if (state is ContentAnalyticsLoaded) {
+        final currentState = state as ContentAnalyticsLoaded;
+        emit(currentState.copyWith(
+          viewers: viewers,
+          isViewersRefreshing: false,
+        ));
+      } else {
+        emit(ContentAnalyticsLoaded(
+          viewers: viewers,
+          isAnnouncement: false,
+          isViewersRefreshing: false,
+        ));
+      }
     } catch (e) {
+      print('🚨 Dashboard: Error loading event viewers: ${e.toString()}');
       emit(DashboardError('Failed to load event viewers: ${e.toString()}'));
     }
   }
@@ -171,5 +233,99 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     Emitter<DashboardState> emit,
   ) async {
     emit(DashboardInitial());
+  }
+
+  Future<void> _onAnnouncementStatsRequested(
+    AnnouncementStatsRequested event,
+    Emitter<DashboardState> emit,
+  ) async {
+    // Check if we already have combined analytics state
+    if (state is ContentAnalyticsLoaded) {
+      final currentState = state as ContentAnalyticsLoaded;
+      if (currentState.isAnnouncement) {
+        emit(currentState.copyWith(isStatsRefreshing: true));
+      } else {
+        emit(DashboardLoading());
+      }
+    } else if (state is ContentStatsLoaded) {
+      final currentState = state as ContentStatsLoaded;
+      if (currentState.isAnnouncement) {
+        emit(currentState.copyWith(isRefreshing: true));
+      } else {
+        emit(DashboardLoading());
+      }
+    } else {
+      emit(DashboardLoading());
+    }
+
+    try {
+      final stats = await _dashboardRepository.getAnnouncementStats(event.announcementId);
+      print('📊 Dashboard: Announcement stats loaded successfully');
+      
+      // Check if we have viewers to combine with
+      if (state is ContentAnalyticsLoaded) {
+        final currentState = state as ContentAnalyticsLoaded;
+        emit(currentState.copyWith(
+          stats: stats,
+          isStatsRefreshing: false,
+        ));
+      } else {
+        emit(ContentAnalyticsLoaded(
+          stats: stats,
+          isAnnouncement: true,
+          isStatsRefreshing: false,
+        ));
+      }
+    } catch (e) {
+      print('🚨 Dashboard: Error loading announcement stats: ${e.toString()}');
+      emit(DashboardError('Failed to load announcement stats: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onEventStatsRequested(
+    EventStatsRequested event,
+    Emitter<DashboardState> emit,
+  ) async {
+    // Check if we already have combined analytics state
+    if (state is ContentAnalyticsLoaded) {
+      final currentState = state as ContentAnalyticsLoaded;
+      if (!currentState.isAnnouncement) {
+        emit(currentState.copyWith(isStatsRefreshing: true));
+      } else {
+        emit(DashboardLoading());
+      }
+    } else if (state is ContentStatsLoaded) {
+      final currentState = state as ContentStatsLoaded;
+      if (!currentState.isAnnouncement) {
+        emit(currentState.copyWith(isRefreshing: true));
+      } else {
+        emit(DashboardLoading());
+      }
+    } else {
+      emit(DashboardLoading());
+    }
+
+    try {
+      final stats = await _dashboardRepository.getEventStats(event.eventId);
+      print('📊 Dashboard: Event stats loaded successfully');
+      
+      // Check if we have viewers to combine with
+      if (state is ContentAnalyticsLoaded) {
+        final currentState = state as ContentAnalyticsLoaded;
+        emit(currentState.copyWith(
+          stats: stats,
+          isStatsRefreshing: false,
+        ));
+      } else {
+        emit(ContentAnalyticsLoaded(
+          stats: stats,
+          isAnnouncement: false,
+          isStatsRefreshing: false,
+        ));
+      }
+    } catch (e) {
+      print('🚨 Dashboard: Error loading event stats: ${e.toString()}');
+      emit(DashboardError('Failed to load event stats: ${e.toString()}'));
+    }
   }
 }

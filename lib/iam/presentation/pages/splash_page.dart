@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../app/routes/route_names.dart';
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
+import '../bloc/auth_state.dart';
 
 /// Splash/Loading page - shown when app starts
 class SplashPage extends StatefulWidget {
@@ -14,21 +18,32 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    _navigateToSignIn();
+    _checkAuthenticationStatus();
   }
 
-  /// Navigate to sign in after a brief delay
-  void _navigateToSignIn() {
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, RouteNames.signIn);
-      }
-    });
+  /// Check if user is already authenticated
+  void _checkAuthenticationStatus() {
+    // Dispatch event to check if user is logged in
+    context.read<AuthBloc>().add(AuthCheckStatusRequested());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          // User is logged in, navigate to home
+          Navigator.pushReplacementNamed(context, RouteNames.home);
+        } else if (state is AuthUnauthenticated) {
+          // User is not logged in, navigate to sign in
+          Navigator.pushReplacementNamed(context, RouteNames.signIn);
+        } else if (state is AuthError) {
+          // Error occurred, navigate to sign in
+          Navigator.pushReplacementNamed(context, RouteNames.signIn);
+        }
+        // If AuthLoading or AuthInitial, stay on splash screen
+      },
+      child: Scaffold(
       backgroundColor: CentralisColors.background,
       body: Center(
         child: Column(
@@ -74,6 +89,7 @@ class _SplashPageState extends State<SplashPage> {
               valueColor: AlwaysStoppedAnimation<Color>(CentralisColors.primary),
             ),
           ],
+        ),
         ),
       ),
     );

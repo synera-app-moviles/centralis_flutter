@@ -3,16 +3,20 @@ import '../models/dashboard_summary.dart';
 import '../models/dashboard_user.dart';
 import '../models/user_viewed_announcement.dart';
 import '../models/user_viewed_event.dart';
+import '../models/content_stats.dart';
+import '../models/viewer_info.dart';
 
 abstract class DashboardRepository {
   Future<DashboardSummary> getViewsSummary();
   Future<List<DashboardUser>> getAllUsers();
   Future<List<UserViewedAnnouncement>> getUserViewedAnnouncements(String userId);
   Future<List<UserViewedEvent>> getUserViewedEvents(String userId);
-  Future<List<DashboardUser>> getAnnouncementViewers(String announcementId);
-  Future<List<DashboardUser>> getEventViewers(String eventId);
+  Future<List<ViewerInfo>> getAnnouncementViewers(String announcementId);
+  Future<List<ViewerInfo>> getEventViewers(String eventId);
   Future<Map<String, dynamic>> registerAnnouncementView(String announcementId, String userId);
   Future<Map<String, dynamic>> registerEventView(String eventId, String userId);
+  Future<ContentStats> getAnnouncementStats(String announcementId);
+  Future<ContentStats> getEventStats(String eventId);
 }
 
 class DashboardRepositoryImpl implements DashboardRepository {
@@ -43,12 +47,12 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
-  Future<List<DashboardUser>> getAnnouncementViewers(String announcementId) async {
+  Future<List<ViewerInfo>> getAnnouncementViewers(String announcementId) async {
     return await remoteDataSource.getAnnouncementViewers(announcementId);
   }
 
   @override
-  Future<List<DashboardUser>> getEventViewers(String eventId) async {
+  Future<List<ViewerInfo>> getEventViewers(String eventId) async {
     return await remoteDataSource.getEventViewers(eventId);
   }
 
@@ -60,5 +64,15 @@ class DashboardRepositoryImpl implements DashboardRepository {
   @override
   Future<Map<String, dynamic>> registerEventView(String eventId, String userId) async {
     return await remoteDataSource.registerEventView(eventId, userId);
+  }
+
+  @override
+  Future<ContentStats> getAnnouncementStats(String announcementId) async {
+    return await remoteDataSource.getAnnouncementStats(announcementId);
+  }
+
+  @override
+  Future<ContentStats> getEventStats(String eventId) async {
+    return await remoteDataSource.getEventStats(eventId);
   }
 }

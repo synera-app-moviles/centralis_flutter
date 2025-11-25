@@ -29,4 +29,5 @@ class RouteNames {
   // Dashboard routes
   static const String dashboard = '/dashboard';
   static const String userViewsDetail = '/dashboard/user-views';
+  static const String contentStats = '/dashboard/content-stats';
 }

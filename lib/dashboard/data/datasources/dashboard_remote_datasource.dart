@@ -1,10 +1,13 @@
 import 'dart:convert';
 import '../../../core/network/api_client.dart';
 import '../../../profile/data/models/enums.dart';
+import '../../../profile/data/repositories/profile_repository.dart';
 import '../models/dashboard_summary.dart';
 import '../models/dashboard_user.dart';
 import '../models/user_viewed_announcement.dart';
 import '../models/user_viewed_event.dart';
+import '../models/content_stats.dart';
+import '../models/viewer_info.dart';
 
 abstract class DashboardRemoteDataSource {
   /// Get general summary of views
@@ -20,23 +23,33 @@ abstract class DashboardRemoteDataSource {
   Future<List<UserViewedEvent>> getUserViewedEvents(String userId);
 
   /// Get users who viewed specific announcement
-  Future<List<DashboardUser>> getAnnouncementViewers(String announcementId);
+  Future<List<ViewerInfo>> getAnnouncementViewers(String announcementId);
 
   /// Get users who viewed specific event
-  Future<List<DashboardUser>> getEventViewers(String eventId);
+  Future<List<ViewerInfo>> getEventViewers(String eventId);
 
   /// Register announcement view
   Future<Map<String, dynamic>> registerAnnouncementView(String announcementId, String userId);
 
   /// Register event view
   Future<Map<String, dynamic>> registerEventView(String eventId, String userId);
+
+  /// Get announcement statistics
+  Future<ContentStats> getAnnouncementStats(String announcementId);
+
+  /// Get event statistics  
+  Future<ContentStats> getEventStats(String eventId);
 }
 
 class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   final ApiClient _apiClient;
+  final ProfileRepository _profileRepository;
 
-  DashboardRemoteDataSourceImpl({required ApiClient apiClient})
-      : _apiClient = apiClient;
+  DashboardRemoteDataSourceImpl({
+    required ApiClient apiClient,
+    required ProfileRepository profileRepository,
+  }) : _apiClient = apiClient,
+       _profileRepository = profileRepository;
 
   @override
   Future<DashboardSummary> getViewsSummary() async {
@@ -133,27 +146,75 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   }
 
   @override
-  Future<List<DashboardUser>> getAnnouncementViewers(String announcementId) async {
+  Future<List<ViewerInfo>> getAnnouncementViewers(String announcementId) async {
     final endpoint = '/dashboard/announcements/$announcementId/users/views';
+    print('📡 Dashboard: Fetching announcement viewers from $endpoint');
+    
     final response = await _apiClient.get(
       endpoint,
       requireAuth: true,
     );
 
+    print('📡 Dashboard: Announcement viewers response status: ${response.statusCode}');
+    print('📡 Dashboard: Announcement viewers response body: ${response.body}');
+
     final data = jsonDecode(response.body) as List<dynamic>;
-    return data.map((json) => DashboardUser.fromJson(json as Map<String, dynamic>)).toList();
+    final viewers = data.map((json) => ViewerInfo.fromJson(json as Map<String, dynamic>)).toList();
+    print('📊 Dashboard: Parsed ${viewers.length} announcement viewers');
+    
+    // Enrich viewers with profile data (avatar URLs)
+    final enrichedViewers = await _enrichViewersWithProfileData(viewers);
+    return enrichedViewers;
   }
 
   @override
-  Future<List<DashboardUser>> getEventViewers(String eventId) async {
+  Future<List<ViewerInfo>> getEventViewers(String eventId) async {
     final endpoint = '/dashboard/events/$eventId/users/views';
+    print('📡 Dashboard: Fetching event viewers from $endpoint');
+    
     final response = await _apiClient.get(
       endpoint,
       requireAuth: true,
     );
 
+    print('📡 Dashboard: Event viewers response status: ${response.statusCode}');
+    print('📡 Dashboard: Event viewers response body: ${response.body}');
+
     final data = jsonDecode(response.body) as List<dynamic>;
-    return data.map((json) => DashboardUser.fromJson(json as Map<String, dynamic>)).toList();
+    final viewers = data.map((json) => ViewerInfo.fromJson(json as Map<String, dynamic>)).toList();
+    print('📊 Dashboard: Parsed ${viewers.length} event viewers');
+    
+    // Enrich viewers with profile data (avatar URLs)
+    final enrichedViewers = await _enrichViewersWithProfileData(viewers);
+    return enrichedViewers;
+  }
+
+  /// Helper method to enrich viewers with profile data (especially avatar URLs)
+  Future<List<ViewerInfo>> _enrichViewersWithProfileData(List<ViewerInfo> viewers) async {
+    if (viewers.isEmpty) return viewers;
+
+    try {
+      // Get all profiles to create a userId -> avatarUrl mapping
+      final profiles = await _profileRepository.getAllProfiles();
+      final Map<String, String?> userIdToAvatarUrl = {};
+      
+      for (final profile in profiles) {
+        userIdToAvatarUrl[profile.userId] = profile.avatarUrl;
+      }
+      
+      // Enrich each viewer with avatar URL from profile
+      final enrichedViewers = viewers.map((viewer) {
+        final avatarUrl = userIdToAvatarUrl[viewer.userId];
+        return viewer.copyWith(avatarUrl: avatarUrl);
+      }).toList();
+      
+      print('📊 Dashboard: Enriched ${enrichedViewers.length} viewers with profile data');
+      return enrichedViewers;
+    } catch (e) {
+      print('⚠️ Dashboard: Failed to enrich viewers with profile data: $e');
+      // Return original viewers if profile enrichment fails
+      return viewers;
+    }
   }
 
   @override
@@ -178,6 +239,44 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     );
 
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  @override
+  Future<ContentStats> getAnnouncementStats(String announcementId) async {
+    final endpoint = '/dashboard/announcements/$announcementId/stats';
+    try {
+      final response = await _apiClient.get(
+        endpoint,
+        requireAuth: true,
+      );
+
+      final data = jsonDecode(response.body);
+      print('📊 Dashboard: Raw announcement stats: $data');
+      
+      return ContentStats.fromJson(data as Map<String, dynamic>);
+    } catch (e) {
+      print('❌ Dashboard: Error fetching announcement stats: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ContentStats> getEventStats(String eventId) async {
+    final endpoint = '/dashboard/events/$eventId/stats';
+    try {
+      final response = await _apiClient.get(
+        endpoint,
+        requireAuth: true,
+      );
+
+      final data = jsonDecode(response.body);
+      print('📊 Dashboard: Raw event stats: $data');
+      
+      return ContentStats.fromJson(data as Map<String, dynamic>);
+    } catch (e) {
+      print('❌ Dashboard: Error fetching event stats: $e');
+      rethrow;
+    }
   }
 
   /// Helper method to parse department from API response

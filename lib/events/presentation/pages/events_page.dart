@@ -68,6 +68,7 @@ import 'dart:async';
             'Events',
             style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
           ),
+          automaticallyImplyLeading: false, // Remove back button for main page
           actions: [
             IconButton(
               onPressed: _openCreate,

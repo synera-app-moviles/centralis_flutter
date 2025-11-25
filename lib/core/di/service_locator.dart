@@ -181,7 +181,10 @@ Future<void> initializeDependencies() async {
 
   // Dashboard feature
   sl.registerLazySingleton<DashboardRemoteDataSource>(
-    () => DashboardRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+    () => DashboardRemoteDataSourceImpl(
+      apiClient: sl<ApiClient>(),
+      profileRepository: sl<ProfileRepository>(),
+    ),
   );
   
   sl.registerLazySingleton<DashboardRepository>(

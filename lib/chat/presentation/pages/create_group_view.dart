@@ -447,7 +447,7 @@ class _CreateGroupViewState extends State<CreateGroupView> {
                 itemCount: _filteredProfiles.length,
                 itemBuilder: (context, index) {
                   final profile = _filteredProfiles[index];
-                  final isSelected = _selectedParticipants.contains(profile.profileId);
+                  final isSelected = _selectedParticipants.contains(profile.userId);
                   
                   return ListTile(
                     leading: CircleAvatar(
@@ -488,9 +488,9 @@ class _CreateGroupViewState extends State<CreateGroupView> {
                       onChanged: (value) {
                         setState(() {
                           if (value == true) {
-                            _selectedParticipants.add(profile.profileId);
+                            _selectedParticipants.add(profile.userId);
                           } else {
-                            _selectedParticipants.remove(profile.profileId);
+                            _selectedParticipants.remove(profile.userId);
                           }
                         });
                       },
@@ -500,9 +500,9 @@ class _CreateGroupViewState extends State<CreateGroupView> {
                     onTap: () {
                       setState(() {
                         if (isSelected) {
-                          _selectedParticipants.remove(profile.profileId);
+                          _selectedParticipants.remove(profile.userId);
                         } else {
-                          _selectedParticipants.add(profile.profileId);
+                          _selectedParticipants.add(profile.userId);
                         }
                       });
                     },
