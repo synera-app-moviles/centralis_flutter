@@ -10,6 +10,9 @@ import '../../events/presentation/pages/update_event_page.dart';
 import '../../events/presentation/pages/event_details_page.dart';
 import '../../notifications/presentation/pages/notifications_page.dart';
 import '../../notifications/presentation/bloc/notification_bloc.dart';
+import '../../dashboard/presentation/pages/dashboard_page.dart';
+import '../../dashboard/presentation/pages/user_views_detail_page.dart';
+import '../../dashboard/presentation/bloc/dashboard_bloc.dart';
 import '../../core/di/service_locator.dart';
 import '../navigation/main_navigation.dart';
 import 'route_names.dart';
@@ -106,6 +109,32 @@ class RouteGenerator {
           return MaterialPageRoute(
             builder: (_) => EditGroupView(
               groupId: args['groupId'] as String,
+            ),
+          );
+        }
+        return _errorRoute(settings.name);
+      
+      // Dashboard routes
+      case RouteNames.dashboard:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) => sl<DashboardBloc>(),
+            child: const DashboardPage(),
+          ),
+        );
+
+      case RouteNames.userViewsDetail:
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args != null && 
+            args.containsKey('userId') && 
+            args.containsKey('userFullName')) {
+          return MaterialPageRoute(
+            builder: (_) => BlocProvider(
+              create: (_) => sl<DashboardBloc>(),
+              child: UserViewsDetailPage(
+                userId: args['userId'] as String,
+                userFullName: args['userFullName'] as String,
+              ),
             ),
           );
         }

@@ -25,4 +25,8 @@ class RouteNames {
   static const String createEvent = '/events/create';
   static const String updateEvent = '/events/update';
   static const String eventDetails = '/events/details';
+
+  // Dashboard routes
+  static const String dashboard = '/dashboard';
+  static const String userViewsDetail = '/dashboard/user-views';
 }

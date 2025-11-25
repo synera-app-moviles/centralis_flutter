@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../shared/theme/colors.dart';
+import '../../../app/routes/route_names.dart';
 
-/// Profile action buttons (Edit Profile, Sign Out)
+/// Profile action buttons (Edit Profile, Dashboard, Sign Out)
 class ProfileActionButtons extends StatelessWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onSignOut;
@@ -13,6 +14,10 @@ class ProfileActionButtons extends StatelessWidget {
     required this.onSignOut,
     this.isLoading = false,
   });
+
+  void _navigateToDashboard(BuildContext context) {
+    Navigator.pushNamed(context, RouteNames.dashboard);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +35,27 @@ class ProfileActionButtons extends StatelessWidget {
                 foregroundColor: CentralisColors.onPrimary,
               ),
               child: const Text('Edit Profile'),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Dashboard Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _navigateToDashboard(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A2B61),
+                foregroundColor: CentralisColors.onBackground,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.dashboard, size: 20),
+                  SizedBox(width: 8),
+                  Text('Analytics Dashboard'),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
