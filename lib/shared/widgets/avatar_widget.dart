@@ -105,7 +105,6 @@ class _AvatarWidgetState extends State<AvatarWidget> {
         );
       },
       errorBuilder: (context, error, stackTrace) {
-        print('🖼️ Error loading avatar: $error');
         return _buildPlaceholder();
       },
     );

@@ -47,17 +47,29 @@ class ChatHeaderWidget extends StatelessWidget {
               CircleAvatar(
                 radius: 18,
                 backgroundColor: ChatColors.cardBackground,
-                backgroundImage: NetworkImage(avatarUrl!),
-                child: avatarUrl == null
-                    ? Text(
-                        title.isNotEmpty ? title[0].toUpperCase() : 'C',
-                        style: const TextStyle(
-                          color: ChatColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      )
-                    : null,
+                child: ClipOval(
+                  child: Image.network(
+                    avatarUrl!,
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.group,
+                        color: ChatColors.textPrimary,
+                        size: 20,
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Icon(
+                        Icons.group,
+                        color: ChatColors.textPrimary,
+                        size: 20,
+                      );
+                    },
+                  ),
+                ),
               ),
             ],
             const SizedBox(width: 12),

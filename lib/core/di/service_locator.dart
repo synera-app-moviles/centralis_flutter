@@ -150,7 +150,10 @@ Future<void> initializeDependencies() async {
   );
   
   sl.registerFactory<ChatBloc>(
-    () => ChatBloc(chatRepository: sl<ChatRepository>()),
+    () => ChatBloc(
+      chatRepository: sl<ChatRepository>(),
+      cloudinaryService: sl<CloudinaryService>(),
+    ),
   );
   // Notifications feature
   sl.registerLazySingleton<http.Client>(

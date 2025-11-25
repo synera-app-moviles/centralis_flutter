@@ -6,6 +6,8 @@ import '../models/message_response.dart';
 import '../models/create_group_request.dart';
 import '../models/edit_group_request.dart';
 import '../models/send_message_request.dart';
+import '../models/chat_image.dart';
+import '../models/send_image_request.dart';
 
 abstract class ChatRemoteDataSource {
   Future<List<ChatItem>> getUserGroups(String userId);
@@ -16,6 +18,12 @@ abstract class ChatRemoteDataSource {
   Future<void> deleteGroup(String groupId);
   Future<MessageResponse> sendMessage(String groupId, SendMessageRequest request);
   Future<List<MessageResponse>> getGroupMessages(String groupId);
+  
+  // Image methods
+  Future<ChatImage> sendImage(String groupId, SendImageRequest request);
+  Future<List<ChatImage>> getGroupImages(String groupId);
+  Future<ChatImage> getImageById(String groupId, String imageId);
+  Future<ChatImage> deleteImage(String groupId, String imageId);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -177,6 +185,106 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       return messages;
     } catch (e) {
       print('❌ Error getting messages: $e');
+      rethrow;
+    }
+  }
+
+  // Image methods implementation
+  @override
+  Future<ChatImage> sendImage(String groupId, SendImageRequest request) async {
+    final endpoint = '/groups/$groupId/images';
+    print('📸 POST endpoint: $endpoint');
+    print('📸 Request body: ${request.toJson()}');
+    
+    try {
+      final response = await _apiClient.post(
+        endpoint,
+        body: request.toJson(),
+        requireAuth: true,
+      );
+
+      print('📸 Send image response status: ${response.statusCode}');
+      print('📸 Send image response body: ${response.body}');
+      
+      final data = jsonDecode(response.body);
+      final image = ChatImage.fromJson(data);
+      print('✅ Image sent successfully: ${image.imageId}');
+      
+      return image;
+    } catch (e) {
+      print('❌ Error sending image: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<ChatImage>> getGroupImages(String groupId) async {
+    final endpoint = '/groups/$groupId/images';
+    print('🖼️ GET endpoint: $endpoint');
+    
+    try {
+      final response = await _apiClient.get(
+        endpoint,
+        requireAuth: true,
+      );
+
+      print('🖼️ Get images response status: ${response.statusCode}');
+      
+      final List<dynamic> data = jsonDecode(response.body);
+      final images = data.map((json) => ChatImage.fromJson(json)).toList();
+      print('✅ Retrieved ${images.length} images for group $groupId');
+      
+      return images;
+    } catch (e) {
+      print('❌ Error getting images: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ChatImage> getImageById(String groupId, String imageId) async {
+    final endpoint = '/groups/$groupId/images/$imageId';
+    print('🔍 GET endpoint: $endpoint');
+    
+    try {
+      final response = await _apiClient.get(
+        endpoint,
+        requireAuth: true,
+      );
+
+      print('🔍 Get image response status: ${response.statusCode}');
+      
+      final data = jsonDecode(response.body);
+      final image = ChatImage.fromJson(data);
+      print('✅ Retrieved image: ${image.imageId}');
+      
+      return image;
+    } catch (e) {
+      print('❌ Error getting image: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ChatImage> deleteImage(String groupId, String imageId) async {
+    final endpoint = '/groups/$groupId/images/$imageId';
+    print('🗑️ DELETE endpoint: $endpoint');
+    
+    try {
+      final response = await _apiClient.delete(
+        endpoint,
+        requireAuth: true,
+      );
+
+      print('🗑️ Delete image response status: ${response.statusCode}');
+      
+      final data = jsonDecode(response.body);
+      final image = ChatImage.fromJson(data);
+      print('✅ Image deleted: ${image.imageId}');
+      
+      return image;
+    } catch (e) {
+      print('❌ Error deleting image: $e');
       rethrow;
     }
   }

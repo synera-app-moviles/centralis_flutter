@@ -85,21 +85,36 @@ class _MessageBubbleWidgetState extends State<MessageBubbleWidget> {
     return CircleAvatar(
       radius: 16,
       backgroundColor: ChatColors.cardBackground,
-      backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-          ? NetworkImage(avatarUrl)
-          : null,
-      child: avatarUrl == null || avatarUrl.isEmpty
-          ? Text(
-              senderName.isNotEmpty 
-                  ? senderName[0].toUpperCase() 
-                  : 'U',
-              style: const TextStyle(
-                color: ChatColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+      child: avatarUrl != null && avatarUrl.isNotEmpty
+          ? ClipOval(
+              child: Image.network(
+                avatarUrl,
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildAvatarFallback(senderName);
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return _buildAvatarFallback(senderName);
+                },
               ),
             )
-          : null,
+          : _buildAvatarFallback(senderName),
+    );
+  }
+
+  Widget _buildAvatarFallback(String senderName) {
+    return Text(
+      senderName.isNotEmpty 
+          ? senderName[0].toUpperCase() 
+          : 'U',
+      style: const TextStyle(
+        color: ChatColors.textPrimary,
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+      ),
     );
   }
 
