@@ -37,7 +37,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
     _fetchProfiles();
   }
 
-  // dart
   Future<void> _fetchProfiles() async {
     setState(() => _loadingProfiles = true);
     try {
@@ -55,7 +54,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
       }).toList();
     } catch (e, st) {
       print('❌ _fetchProfiles error: $e\n$st');
-
 
       try {
         final respNoAuth = await sl<ApiClient>().get(ApiConstants.profiles, requireAuth: false);
@@ -203,7 +201,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                                   separatorBuilder: (_, __) => const Divider(color: Colors.white12),
                                   itemBuilder: (context, idx) {
                                     final p = filteredProfiles[idx];
-                                    final id = (p['profileId'] ?? p['id'] ?? p['userId'] ?? '').toString();
+                                    // Cambio clave: preferir `userId` para que coincida con SecureStorage.getUserId()
+                                    final id = (p['userId'] ?? p['profileId'] ?? p['id'] ?? '').toString();
                                     final display = (p['fullName'] ?? p['name'] ?? p['username'] ?? id).toString();
                                     final avatar = (p['photoUrl'] ?? p['avatar'] ?? p['imageUrl'])?.toString();
                                     final selected = _selectedIds.contains(id);

@@ -22,12 +22,34 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
   String? _loadedForEventId;
   bool _loadingAttendees = false;
   final List<Map<String, String?>> _attendees = [];
+  Map<String, Map<String, dynamic>> _profilesById = {};
+  bool _loadingProfiles = false;
 
   @override
   void initState() {
     super.initState();
     context.read<EventBloc>().add(LoadEventById(widget.eventId));
   }
+
+  Future<void> _fetchProfilesIfNeeded() async {
+    if (_profilesById.isNotEmpty) return;
+    if (!mounted) return;
+    setState(() => _loadingProfiles = true);
+    try {
+      final resp = await sl<ApiClient>().get(ApiConstants.profiles, requireAuth: true);
+      final List<dynamic> list = jsonDecode(resp.body);
+      for (final e in list) {
+        final Map<String, dynamic> map = e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map);
+        final key = (map['userId'] ?? map['profileId'] ?? map['id'])?.toString();
+        if (key != null && key.isNotEmpty) _profilesById[key] = map;
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error fetching profiles list: $e');
+    } finally {
+      if (mounted) setState(() => _loadingProfiles = false);
+    }
+  }
+
 
   Future<void> _fetchAttendees(List<String> ids) async {
     if (!mounted) return;
@@ -47,6 +69,27 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
     try {
       for (final id in ids) {
         try {
+          // intento desde caché primero
+          final cached = _profilesById[id];
+          if (cached != null) {
+            final first = (cached['firstName'] ?? cached['first_name'])?.toString();
+            final last = (cached['lastName'] ?? cached['last_name'])?.toString();
+            final fullFromParts = ((first ?? '') + ' ' + (last ?? '')).trim();
+            final rawName = (cached['fullName'] ??
+                cached['name'] ??
+                (fullFromParts.isNotEmpty ? fullFromParts : null) ??
+                cached['username'] ??
+                cached['profileId'] ??
+                cached['id'])
+                ?.toString();
+            final name = (rawName != null && rawName.isNotEmpty) ? rawName : 'Usuario';
+            final avatar = (cached['photoUrl'] ?? cached['avatar'] ?? cached['imageUrl'] ?? cached['avatarUrl'])?.toString();
+
+            _attendees.add({'id': id, 'name': name, 'avatar': avatar});
+            continue;
+          }
+
+          // si no está en caché, consultar por id (fallback)
           final endpoint = ApiConstants.profileById.replaceAll('{id}', id);
           final resp = await sl<ApiClient>().get(endpoint, requireAuth: true);
           final data = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -55,34 +98,24 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
           final last = (data['lastName'] ?? data['last_name'])?.toString();
           final fullFromParts = ((first ?? '') + ' ' + (last ?? '')).trim();
           final rawName = (data['fullName'] ??
-                  data['name'] ??
-                  (fullFromParts.isNotEmpty ? fullFromParts : null) ??
-                  data['username'] ??
-                  data['profileId'] ??
-                  data['id'])
+              data['name'] ??
+              (fullFromParts.isNotEmpty ? fullFromParts : null) ??
+              data['username'] ??
+              data['profileId'] ??
+              data['id'])
               ?.toString();
           final name = (rawName != null && rawName.isNotEmpty) ? rawName : 'Usuario';
           final avatar = (data['photoUrl'] ?? data['avatar'] ?? data['imageUrl'] ?? data['avatarUrl'])?.toString();
 
-          _attendees.add({
-            'id': id,
-            'name': name,
-            'avatar': avatar,
-          });
+          _attendees.add({'id': id, 'name': name, 'avatar': avatar});
         } catch (e) {
-          _attendees.add({
-            'id': id,
-            'name': 'Usuario',
-            'avatar': null,
-          });
+          _attendees.add({'id': id, 'name': 'Usuario', 'avatar': null});
         }
       }
     } catch (e) {
       if (kDebugMode) print('Error fetching attendees: $e');
     } finally {
-      if (mounted) setState(() {
-        _loadingAttendees = false;
-      });
+      if (mounted) setState(() => _loadingAttendees = false);
     }
   }
 
@@ -127,7 +160,8 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
             final event = state.event;
             if (_loadedForEventId != event.id || _shouldFetchAttendees(event.recipientIds)) {
               _loadedForEventId = event.id;
-              _fetchAttendees(event.recipientIds);
+
+              _fetchProfilesIfNeeded().then((_) => _fetchAttendees(event.recipientIds));
             }
           }
         },
