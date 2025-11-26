@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "1051786161237",
+    "project_id": "centralis-89ca6",
+    "storage_bucket": "centralis-89ca6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051786161237:android:03f07e3a172db7854c78dc",
+        "android_client_info": {
+          "package_name": "com.centralis.flutterapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4f4ayYZtoT347vbc1J0BZqPR5y0hvnrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051786161237:android:0d851871bbf65b774c78dc",
+        "android_client_info": {
+          "package_name": "com.example.centralis_kotlin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4f4ayYZtoT347vbc1J0BZqPR5y0hvnrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051786161237:android:55557b85c1a187324c78dc",
+        "android_client_info": {
+          "package_name": "synera.centralis.api"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4f4ayYZtoT347vbc1J0BZqPR5y0hvnrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
