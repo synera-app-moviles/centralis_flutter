@@ -7,6 +7,8 @@ class MessageInputWidget extends StatefulWidget {
   final VoidCallback? onSend;
   final String hintText;
   final bool isEnabled;
+  final Widget? leadingWidget; // Para el botón de imagen al inicio
+  final Widget? trailingWidget; // Para botones adicionales al final
 
   const MessageInputWidget({
     super.key,
@@ -14,6 +16,8 @@ class MessageInputWidget extends StatefulWidget {
     this.onSend,
     this.hintText = 'Escribe un mensaje...',
     this.isEnabled = true,
+    this.leadingWidget,
+    this.trailingWidget,
   });
 
   @override
@@ -61,6 +65,12 @@ class _MessageInputWidgetState extends State<MessageInputWidget> {
       ),
       child: Row(
         children: [
+          // Botón de imagen (si se proporciona)
+          if (widget.leadingWidget != null) ...[
+            widget.leadingWidget!,
+            const SizedBox(width: 8),
+          ],
+          
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -121,6 +131,12 @@ class _MessageInputWidgetState extends State<MessageInputWidget> {
               ),
             ),
           ),
+          
+          // Botón adicional al final (si se proporciona)
+          if (widget.trailingWidget != null) ...[
+            const SizedBox(width: 8),
+            widget.trailingWidget!,
+          ],
         ],
       ),
     );

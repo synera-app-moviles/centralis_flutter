@@ -2,12 +2,13 @@ import '../datasources/auth_remote_datasource.dart';
 import '../datasources/auth_local_datasource.dart';
 import '../models/sign_in_request.dart';
 import '../models/sign_up_request.dart';
+import '../models/sign_up_response.dart';
 import '../models/authenticated_user.dart';
 import '../models/user_model.dart';
 
 abstract class AuthRepository {
   Future<AuthenticatedUser> signIn(String username, String password);
-  Future<UserModel> signUp({
+  Future<SignUpResponse> signUp({
     required String username,
     required String password,
     required String name,
@@ -43,7 +44,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserModel> signUp({
+  Future<SignUpResponse> signUp({
     required String username,
     required String password,
     required String name,
@@ -56,7 +57,7 @@ class AuthRepositoryImpl implements AuthRepository {
       name: name,
       lastname: lastname,
       email: email,
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_MANAGER'],
     );
     
     return await remoteDataSource.signUp(request);

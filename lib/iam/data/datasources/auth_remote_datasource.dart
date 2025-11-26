@@ -3,12 +3,12 @@ import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_constants.dart';
 import '../models/sign_in_request.dart';
 import '../models/sign_up_request.dart';
+import '../models/sign_up_response.dart';
 import '../models/authenticated_user.dart';
-import '../models/user_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<AuthenticatedUser> signIn(SignInRequest request);
-  Future<UserModel> signUp(SignUpRequest request);
+  Future<SignUpResponse> signUp(SignUpRequest request);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -30,7 +30,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<UserModel> signUp(SignUpRequest request) async {
+  Future<SignUpResponse> signUp(SignUpRequest request) async {
     final response = await _apiClient.post(
       ApiConstants.signUp,
       body: request.toJson(),
@@ -38,6 +38,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     );
 
     final data = jsonDecode(response.body);
-    return UserModel.fromJson(data);
+    return SignUpResponse.fromJson(data);
   }
 }

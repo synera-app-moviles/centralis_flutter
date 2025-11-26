@@ -36,6 +36,12 @@ import '../../notifications/data/datasources/notification_local_datasource.dart'
 import '../../notifications/data/datasources/notification_remote_datasource.dart';
 import '../../notifications/data/repositories/notification_repository.dart';
 import '../../notifications/presentation/bloc/notification_bloc.dart';
+
+// Dashboard
+import '../../dashboard/data/datasources/dashboard_remote_datasource.dart';
+import '../../dashboard/data/repositories/dashboard_repository.dart';
+import '../../dashboard/presentation/bloc/dashboard_bloc.dart';
+
 import 'package:http/http.dart' as http;
 
 final GetIt sl = GetIt.instance;
@@ -144,7 +150,10 @@ Future<void> initializeDependencies() async {
   );
   
   sl.registerFactory<ChatBloc>(
-    () => ChatBloc(chatRepository: sl<ChatRepository>()),
+    () => ChatBloc(
+      chatRepository: sl<ChatRepository>(),
+      cloudinaryService: sl<CloudinaryService>(),
+    ),
   );
   // Notifications feature
   sl.registerLazySingleton<http.Client>(
@@ -171,5 +180,23 @@ Future<void> initializeDependencies() async {
 
   sl.registerFactory<NotificationBloc>(
     () => NotificationBloc(repository: sl<NotificationRepository>()),
+  );
+
+  // Dashboard feature
+  sl.registerLazySingleton<DashboardRemoteDataSource>(
+    () => DashboardRemoteDataSourceImpl(
+      apiClient: sl<ApiClient>(),
+      profileRepository: sl<ProfileRepository>(),
+    ),
+  );
+  
+  sl.registerLazySingleton<DashboardRepository>(
+    () => DashboardRepositoryImpl(
+      remoteDataSource: sl<DashboardRemoteDataSource>(),
+    ),
+  );
+  
+  sl.registerFactory<DashboardBloc>(
+    () => DashboardBloc(dashboardRepository: sl<DashboardRepository>()),
   );
 }

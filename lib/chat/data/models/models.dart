@@ -4,3 +4,5 @@ export 'message_response.dart';
 export 'create_group_request.dart';
 export 'create_message_request.dart';
 export 'update_group_request.dart';
+export 'chat_image.dart';
+export 'send_image_request.dart';
