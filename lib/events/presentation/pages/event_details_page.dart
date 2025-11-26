@@ -7,6 +7,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../app/routes/route_names.dart';
+import '../../../shared/theme/colors.dart';
 import '../../../dashboard/presentation/bloc/dashboard_bloc.dart';
 import '../../../dashboard/presentation/bloc/dashboard_event.dart';
 import '../bloc/event_bloc.dart';
@@ -196,7 +197,7 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
                         style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2196F3),
+                        backgroundColor: CentralisColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
