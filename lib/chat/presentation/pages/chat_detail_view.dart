@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/storage/secure_storage_service.dart';
+import '../../data/models/models.dart';
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
 import '../bloc/chat_state.dart';
@@ -99,16 +100,42 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ChatColors.background,
-      body: Column(
-        children: [
-          _buildHeader(),
-          Expanded(
-            child: _buildContent(),
-          ),
-          _buildMessageInput(),
-        ],
+    return BlocListener<ChatBloc, ChatState>(
+      listener: (context, state) {
+        // Manejar estados de imagen
+        if (state is ChatImageUploaded) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Imagen enviada correctamente'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          // Añadir un pequeño delay y luego recargar mensajes para mostrar la nueva imagen
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            _loadMessages();
+          });
+        } else if (state is ChatError && state.message.contains('image')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Error al enviar imagen: ${state.message}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: ChatColors.background,
+        body: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: _buildContent(),
+            ),
+            _buildMessageInput(),
+          ],
+        ),
       ),
     );
   }
@@ -187,8 +214,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
             _scrollToBottom();
           });
         } else if (state is MessageSent) {
-          // Message sent successfully - scroll to bottom 
+          // Message sent successfully - reload messages and scroll to bottom 
           print('💬 ChatDetailView: Message sent successfully');
+          _loadMessages(); // Recargar mensajes para mostrar el nuevo mensaje
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _scrollToBottom();
           });
@@ -227,7 +255,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
         if (state is ChatMessagesLoading) {
           return _buildLoading();
         } else if (state is ChatMessagesLoaded) {
-          return _buildMessagesList(state.messages);
+          return _buildMessagesList(state.messages, state.images);
         } else if (state is ChatMessagesEmpty) {
           return _buildEmptyMessages();
         } else if (state is ChatMessagesError) {
@@ -247,7 +275,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
     );
   }
 
-  Widget _buildMessagesList(List<dynamic> messages) {
+  Widget _buildMessagesList(List<dynamic> messages, List<dynamic> images) {
+    // Combinar mensajes e imágenes ordenados por fecha
+    final combinedContent = _combineMessagesAndImages(messages, images);
+    
     return RefreshIndicator(
       onRefresh: () async {
         _refreshMessages();
@@ -258,18 +289,44 @@ class _ChatDetailViewState extends State<ChatDetailView> {
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: messages.length,
+        itemCount: combinedContent.length,
         itemBuilder: (context, index) {
-          final message = messages[index];
-          final isMyMessage = _currentUserId != null && message.senderId == _currentUserId;
+          final item = combinedContent[index];
+          final isMyContent = _currentUserId != null && item.senderId == _currentUserId;
           
-          return MessageBubbleWidget(
-            message: message,
-            isMyMessage: isMyMessage,
-          );
+          // Si es un mensaje de texto
+          if (item is MessageResponse) {
+            return MessageBubbleWidget(
+              message: item,
+              isMyMessage: isMyContent,
+            );
+          }
+          // Si es una imagen
+          else {
+            return ChatImageBubbleWidget(
+              chatImage: item,
+              isMyImage: isMyContent,
+            );
+          }
         },
       ),
     );
+  }
+
+  /// Combina mensajes e imágenes ordenándolos por fecha de envío
+  List<dynamic> _combineMessagesAndImages(List<dynamic> messages, List<dynamic> images) {
+    final combined = <dynamic>[];
+    combined.addAll(messages);
+    combined.addAll(images);
+    
+    // Ordenar por fecha de envío (más antiguos primero para mostrar cronológicamente)
+    combined.sort((a, b) {
+      final dateA = a is MessageResponse ? a.sentAt : (a as ChatImage).sentAt;
+      final dateB = b is MessageResponse ? b.sentAt : (b as ChatImage).sentAt;
+      return dateA.compareTo(dateB);
+    });
+    
+    return combined;
   }
 
   Widget _buildEmptyMessages() {
@@ -375,6 +432,13 @@ class _ChatDetailViewState extends State<ChatDetailView> {
           onSend: _sendMessage,
           isEnabled: !isLoading,
           hintText: isLoading ? 'Sending...' : 'Type a message...',
+          // Pasar el widget de imagen como trailing widget
+          trailingWidget: _currentUserId != null
+              ? ChatImageAttachmentWidget(
+                  groupId: widget.groupId,
+                  currentUserId: _currentUserId!,
+                )
+              : null,
         );
       },
     );

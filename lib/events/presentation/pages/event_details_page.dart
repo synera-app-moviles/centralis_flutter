@@ -5,10 +5,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_constants.dart';
+import '../../../core/storage/secure_storage_service.dart';
+import '../../../app/routes/route_names.dart';
+import '../../../shared/theme/colors.dart';
+import '../../../dashboard/presentation/bloc/dashboard_bloc.dart';
+import '../../../dashboard/presentation/bloc/dashboard_event.dart';
 import '../bloc/event_bloc.dart';
 import '../bloc/event_event.dart';
 import '../bloc/event_state.dart';
 import '../widgets/delete_event_dialog.dart';
+import '../../data/models/event_model.dart';
 
 class EventDetailsPage extends StatefulWidget {
   final String eventId;
@@ -22,6 +28,8 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
   String? _loadedForEventId;
   bool _loadingAttendees = false;
   final List<Map<String, String?>> _attendees = [];
+  bool _hasTrackedView = false;
+  EventModel? _currentEvent;
 
   @override
   void initState() {
@@ -92,6 +100,26 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
     return !setEquals(currentIds, incomingIds);
   }
 
+  Future<void> _trackEventView() async {
+    if (_hasTrackedView || _currentEvent == null) return;
+    
+    try {
+      final storageService = sl<SecureStorageService>();
+      final currentUserId = await storageService.getUserId();
+      
+      if (currentUserId != null) {
+        final dashboardBloc = sl<DashboardBloc>();
+        dashboardBloc.add(EventViewRegistered(
+          eventId: _currentEvent!.id,
+          userId: currentUserId,
+        ));
+        _hasTrackedView = true;
+      }
+    } catch (e) {
+      print('Error tracking event view: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,6 +153,10 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
 
           if (state is EventLoaded) {
             final event = state.event;
+            _currentEvent = event;
+            // Track the view when event is loaded
+            _trackEventView();
+            
             if (_loadedForEventId != event.id || _shouldFetchAttendees(event.recipientIds)) {
               _loadedForEventId = event.id;
               _fetchAttendees(event.recipientIds);
@@ -153,7 +185,25 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
                   const SizedBox(height: 16),
                   _buildAttendeesSection(event),
                   const SizedBox(height: 24),
-                  // language: dart
+                  // Analytics Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _navigateToAnalytics(context),
+                      icon: const Icon(Icons.analytics, color: Colors.white),
+                      label: const Text(
+                        'View Analytics',
+                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: CentralisColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Edit and Delete Buttons
                   Row(
                     children: [
                       Expanded(
@@ -299,6 +349,19 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
         ],
       ),
     );
+  }
+
+  void _navigateToAnalytics(BuildContext context) {
+    if (_currentEvent != null) {
+      Navigator.of(context).pushNamed(
+        RouteNames.contentStats,
+        arguments: {
+          'contentId': _currentEvent!.id,
+          'contentType': 'event',
+          'contentTitle': _currentEvent!.title,
+        },
+      );
+    }
   }
 
   Widget _buildInfoCard(String label, String value) {

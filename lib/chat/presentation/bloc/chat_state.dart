@@ -33,17 +33,19 @@ class ChatListLoaded extends ChatState {
 /// Estados de éxito para mensajes
 class ChatMessagesLoaded extends ChatState {
   final List<MessageResponse> messages;
+  final List<ChatImage> images;
   final String groupId;
   final String groupName;
 
   const ChatMessagesLoaded({
     required this.messages,
+    required this.images,
     required this.groupId,
     required this.groupName,
   });
 
   @override
-  List<Object?> get props => [messages, groupId, groupName];
+  List<Object?> get props => [messages, images, groupId, groupName];
 }
 
 /// Estado cuando se carga información específica del grupo
@@ -183,14 +185,65 @@ class GroupActionError extends ChatState {
 class ChatListEmpty extends ChatState {}
 
 class ChatMessagesEmpty extends ChatState {
+  final List<ChatImage> images;
   final String groupId;
   final String groupName;
 
   const ChatMessagesEmpty({
+    required this.images,
     required this.groupId,
     required this.groupName,
   });
 
   @override
-  List<Object?> get props => [groupId, groupName];
+  List<Object?> get props => [images, groupId, groupName];
+}
+
+/// Estados para manejo de imágenes
+class ChatImageUploading extends ChatState {
+  final String groupId;
+  final double progress;
+
+  const ChatImageUploading({
+    required this.groupId,
+    required this.progress,
+  });
+
+  @override
+  List<Object?> get props => [groupId, progress];
+}
+
+class ChatImageUploaded extends ChatState {
+  final ChatImage image;
+
+  const ChatImageUploaded({required this.image});
+
+  @override
+  List<Object?> get props => [image];
+}
+
+class ChatImagesLoaded extends ChatState {
+  final List<ChatImage> images;
+  final String groupId;
+
+  const ChatImagesLoaded({
+    required this.images,
+    required this.groupId,
+  });
+
+  @override
+  List<Object?> get props => [images, groupId];
+}
+
+class ChatImageDeleted extends ChatState {
+  final String imageId;
+  final String groupId;
+
+  const ChatImageDeleted({
+    required this.imageId,
+    required this.groupId,
+  });
+
+  @override
+  List<Object?> get props => [imageId, groupId];
 }

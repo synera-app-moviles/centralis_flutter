@@ -1,12 +1,17 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc/bloc.dart';
 import '../../data/repositories/event_repository.dart';
 import 'event_event.dart';
 import 'event_state.dart';
+import '../../data/models/create_event_request.dart';
+import '../../data/models/update_event_request.dart';
+import '../../../core/di/service_locator.dart';
 
 class EventBloc extends Bloc<EventEvent, EventState> {
-  final EventRepository repository;
+  final EventRepository _repo;
 
-  EventBloc({required this.repository}) : super(EventInitial()) {
+  EventBloc({EventRepository? repository})
+      : _repo = repository ?? sl<EventRepository>(),
+        super(EventInitial()) {
     on<LoadEvents>(_onLoadEvents);
     on<LoadEventById>(_onLoadEventById);
     on<LoadEventsCalendar>(_onLoadEventsCalendar);
@@ -19,10 +24,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   Future<void> _onLoadEvents(LoadEvents event, Emitter<EventState> emit) async {
     emit(EventLoading());
     try {
-      final events = await repository.getEvents(
-        userId: event.userId,
-        filterType: event.filterType,
-      );
+      final events = await _repo.getEvents(userId: event.userId, filterType: event.filterType);
       emit(EventsLoaded(events));
     } catch (e) {
       emit(EventError(e.toString()));
@@ -32,8 +34,8 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   Future<void> _onLoadEventById(LoadEventById event, Emitter<EventState> emit) async {
     emit(EventLoading());
     try {
-      final eventData = await repository.getEventById(event.eventId);
-      emit(EventLoaded(eventData));
+      final ev = await _repo.getEventById(event.eventId);
+      emit(EventLoaded(ev));
     } catch (e) {
       emit(EventError(e.toString()));
     }
@@ -42,7 +44,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   Future<void> _onLoadEventsCalendar(LoadEventsCalendar event, Emitter<EventState> emit) async {
     emit(EventLoading());
     try {
-      final events = await repository.getEventsCalendar(userId: event.userId);
+      final events = await _repo.getEventsCalendar(userId: event.userId);
       emit(EventsLoaded(events));
     } catch (e) {
       emit(EventError(e.toString()));
@@ -52,7 +54,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   Future<void> _onCreateEvent(CreateEvent event, Emitter<EventState> emit) async {
     emit(EventLoading());
     try {
-      final created = await repository.createEvent(event.request);
+      final created = await _repo.createEvent(event.request as CreateEventRequest);
       emit(EventCreatedSuccess(created));
     } catch (e) {
       emit(EventError(e.toString()));
@@ -62,7 +64,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   Future<void> _onUpdateEvent(UpdateEvent event, Emitter<EventState> emit) async {
     emit(EventLoading());
     try {
-      final updated = await repository.updateEvent(event.eventId, event.request);
+      final updated = await _repo.updateEvent(event.eventId, event.request as UpdateEventRequest);
       emit(EventUpdatedSuccess(updated));
     } catch (e) {
       emit(EventError(e.toString()));
@@ -72,7 +74,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   Future<void> _onDeleteEvent(DeleteEvent event, Emitter<EventState> emit) async {
     emit(EventLoading());
     try {
-      await repository.deleteEvent(event.eventId);
+      await _repo.deleteEvent(event.eventId);
       emit(EventDeletedSuccess(event.eventId));
     } catch (e) {
       emit(EventError(e.toString()));

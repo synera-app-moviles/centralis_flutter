@@ -4,6 +4,8 @@ import '../models/message_response.dart';
 import '../models/create_group_request.dart';
 import '../models/edit_group_request.dart';
 import '../models/send_message_request.dart';
+import '../models/chat_image.dart';
+import '../models/send_image_request.dart';
 
 abstract class ChatRepository {
   Future<List<ChatItem>> getUserGroups(String userId);
@@ -33,6 +35,16 @@ abstract class ChatRepository {
     String? messageType,
   });
   Future<List<MessageResponse>> getGroupMessages(String groupId);
+  
+  // Image methods
+  Future<ChatImage> sendImage({
+    required String groupId,
+    required String senderId,
+    required String imageUrl,
+  });
+  Future<List<ChatImage>> getGroupImages(String groupId);
+  Future<ChatImage> getImageById(String groupId, String imageId);
+  Future<ChatImage> deleteImage(String groupId, String imageId);
 }
 
 class ChatRepositoryImpl implements ChatRepository {
@@ -120,5 +132,35 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<List<MessageResponse>> getGroupMessages(String groupId) async {
     return await remoteDataSource.getGroupMessages(groupId);
+  }
+
+  // Image methods implementation
+  @override
+  Future<ChatImage> sendImage({
+    required String groupId,
+    required String senderId,
+    required String imageUrl,
+  }) async {
+    final request = SendImageRequest(
+      senderId: senderId,
+      imageUrl: imageUrl,
+    );
+    
+    return await remoteDataSource.sendImage(groupId, request);
+  }
+
+  @override
+  Future<List<ChatImage>> getGroupImages(String groupId) async {
+    return await remoteDataSource.getGroupImages(groupId);
+  }
+
+  @override
+  Future<ChatImage> getImageById(String groupId, String imageId) async {
+    return await remoteDataSource.getImageById(groupId, imageId);
+  }
+
+  @override
+  Future<ChatImage> deleteImage(String groupId, String imageId) async {
+    return await remoteDataSource.deleteImage(groupId, imageId);
   }
 }

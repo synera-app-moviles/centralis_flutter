@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../app/routes/route_names.dart';
+import '../../../iam/presentation/bloc/auth_bloc.dart';
+import '../../../iam/presentation/bloc/auth_event.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_info_section.dart';
 import '../widgets/profile_action_buttons.dart';
@@ -91,6 +93,9 @@ class _ProfilePageState extends State<ProfilePage> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
+              // Use AuthBloc to properly sign out
+              context.read<AuthBloc>().add(AuthSignOutRequested());
+              // Navigate to sign in and clear all previous routes
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 RouteNames.signIn,

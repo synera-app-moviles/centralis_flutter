@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../shared/theme/colors.dart';
 import '../../../app/routes/route_names.dart';
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
+import '../bloc/auth_state.dart';
 
 /// Sign Up page with complete registration form
 class SignUpPage extends StatefulWidget {
@@ -22,6 +26,10 @@ class _SignUpPageState extends State<SignUpPage> {
   String? _selectedPosition;
   String? _selectedDepartment;
   bool _isLoading = false;
+  
+  // Password visibility states
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   // Mock data for dropdowns
   final List<String> _positions = [
@@ -53,6 +61,20 @@ class _SignUpPageState extends State<SignUpPage> {
     super.dispose();
   }
 
+  /// Toggle password visibility
+  void _togglePasswordVisibility() {
+    setState(() {
+      _obscurePassword = !_obscurePassword;
+    });
+  }
+
+  /// Toggle confirm password visibility
+  void _toggleConfirmPasswordVisibility() {
+    setState(() {
+      _obscureConfirmPassword = !_obscureConfirmPassword;
+    });
+  }
+
   /// Handle sign up button tap
   void _handleSignUp() {
     if (_formKey.currentState?.validate() ?? false) {
@@ -60,16 +82,16 @@ class _SignUpPageState extends State<SignUpPage> {
         _isLoading = true;
       });
 
-      // Simulate API call
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-          // Navigate to home on success
-          Navigator.pushReplacementNamed(context, RouteNames.home);
-        }
-      });
+      // Call AuthBloc to register user
+      context.read<AuthBloc>().add(
+        AuthSignUpRequested(
+          username: _usernameController.text.trim(),
+          password: _passwordController.text.trim(),
+          name: _nameController.text.trim(),
+          lastname: _lastNameController.text.trim(),
+          email: _emailController.text.trim(),
+        ),
+      );
     }
   }
 
@@ -82,7 +104,39 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: CentralisColors.background,
-      body: SafeArea(
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthLoading) {
+            setState(() {
+              _isLoading = true;
+            });
+          } else {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+
+          if (state is AuthSignUpSuccess) {
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.green,
+              ),
+            );
+            // Navigate to sign in page
+            Navigator.pushReplacementNamed(context, RouteNames.signIn);
+          } else if (state is AuthError) {
+            // Show error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        child: SafeArea(
         child: Column(
           children: [
             // Main content
@@ -196,6 +250,8 @@ class _SignUpPageState extends State<SignUpPage> {
                           label: 'Password',
                           controller: _passwordController,
                           isPassword: true,
+                          obscureText: _obscurePassword,
+                          onToggleVisibility: _togglePasswordVisibility,
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
                               return 'Password is required';
@@ -212,6 +268,8 @@ class _SignUpPageState extends State<SignUpPage> {
                           label: 'Confirm Password',
                           controller: _confirmPasswordController,
                           isPassword: true,
+                          obscureText: _obscureConfirmPassword,
+                          onToggleVisibility: _toggleConfirmPasswordVisibility,
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
                               return 'Please confirm your password';
@@ -238,6 +296,7 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -312,7 +371,12 @@ class _SignUpPageState extends State<SignUpPage> {
     bool isPassword = false,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    VoidCallback? onToggleVisibility,
+    bool? obscureText,
   }) {
+    // Determine if password should be obscured
+    bool shouldObscure = isPassword && (obscureText ?? true);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -326,7 +390,7 @@ class _SignUpPageState extends State<SignUpPage> {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          obscureText: isPassword,
+          obscureText: shouldObscure,
           keyboardType: keyboardType,
           style: const TextStyle(
             color: CentralisColors.inputText,
@@ -337,6 +401,15 @@ class _SignUpPageState extends State<SignUpPage> {
             hintStyle: const TextStyle(
               color: CentralisColors.placeholder,
             ),
+            suffixIcon: isPassword && onToggleVisibility != null
+                ? IconButton(
+                    icon: Icon(
+                      shouldObscure ? Icons.visibility : Icons.visibility_off,
+                      color: CentralisColors.placeholder,
+                    ),
+                    onPressed: onToggleVisibility,
+                  )
+                : null,
           ),
           validator: validator,
         ),

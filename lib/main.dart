@@ -1,5 +1,7 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'firebase_options.dart';
 import 'shared/theme/theme.dart';
 import 'app/routes/app_router.dart';
 import 'app/routes/route_names.dart';
@@ -14,6 +16,11 @@ void main() async {
   
   // Initialize dependencies
   await initializeDependencies();
+
+  // 2. Inicializa Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   
   runApp(const CentralisApp());
 }

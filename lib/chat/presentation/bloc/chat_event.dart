@@ -145,3 +145,59 @@ class ChatSelectedEvent extends ChatEvent {
   @override
   List<Object?> get props => [groupId, groupName];
 }
+
+/// Eventos para enviar imágenes
+class ChatImageUploadRequested extends ChatEvent {
+  final String groupId;
+  final String senderId;
+  final String imagePath;
+
+  const ChatImageUploadRequested({
+    required this.groupId,
+    required this.senderId,
+    required this.imagePath,
+  });
+
+  @override
+  List<Object?> get props => [groupId, senderId, imagePath];
+}
+
+/// Evento para enviar una imagen ya subida a Cloudinary
+class ChatImageSendRequested extends ChatEvent {
+  final String groupId;
+  final String senderId;
+  final String imageUrl;
+
+  const ChatImageSendRequested({
+    required this.groupId,
+    required this.senderId,
+    required this.imageUrl,
+  });
+
+  @override
+  List<Object?> get props => [groupId, senderId, imageUrl];
+}
+
+/// Eventos para cargar imágenes de un grupo
+class ChatImagesLoadRequested extends ChatEvent {
+  final String groupId;
+
+  const ChatImagesLoadRequested({required this.groupId});
+
+  @override
+  List<Object?> get props => [groupId];
+}
+
+/// Eventos para eliminar una imagen
+class ChatImageDeleteRequested extends ChatEvent {
+  final String groupId;
+  final String imageId;
+
+  const ChatImageDeleteRequested({
+    required this.groupId,
+    required this.imageId,
+  });
+
+  @override
+  List<Object?> get props => [groupId, imageId];
+}

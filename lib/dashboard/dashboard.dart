@@ -1,0 +1,12 @@
+export 'data/models/dashboard_user.dart';
+export 'data/models/user_viewed_announcement.dart';
+export 'data/models/user_viewed_event.dart';
+export 'data/models/dashboard_summary.dart';
+export 'data/repositories/dashboard_repository.dart';
+export 'presentation/bloc/dashboard_bloc.dart';
+export 'presentation/bloc/dashboard_event.dart';
+export 'presentation/bloc/dashboard_state.dart';
+export 'presentation/pages/dashboard_page.dart';
+export 'presentation/pages/user_views_detail_page.dart';
+export 'presentation/widgets/user_list_item.dart';
+export 'presentation/widgets/viewed_content_item.dart';

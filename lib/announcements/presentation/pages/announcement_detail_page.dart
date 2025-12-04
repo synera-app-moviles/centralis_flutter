@@ -4,6 +4,8 @@ import '../../../shared/theme/colors.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../app/routes/route_names.dart';
+import '../../../dashboard/presentation/bloc/dashboard_bloc.dart';
+import '../../../dashboard/presentation/bloc/dashboard_event.dart';
 import '../bloc/announcement_bloc.dart';
 import '../bloc/announcement_event.dart';
 import '../bloc/announcement_state.dart';
@@ -27,12 +29,12 @@ class AnnouncementDetailPage extends StatefulWidget {
 class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
   bool _isCreator = false;
   AnnouncementBloc? _announcementBloc;
-  Announcement? _currentAnnouncement; // Para mantener el estado del anuncio
+  Announcement? _currentAnnouncement;
+  bool _hasTrackedView = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeCurrentUser();
   }
 
   @override
@@ -40,8 +42,24 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
     super.dispose();
   }
 
-  Future<void> _initializeCurrentUser() async {
-    // Ya no es necesario almacenar el userId aquí, se maneja en CommentsSection
+  Future<void> _trackAnnouncementView() async {
+    if (_hasTrackedView || _currentAnnouncement == null) return;
+    
+    try {
+      final storageService = sl<SecureStorageService>();
+      final currentUserId = await storageService.getUserId();
+      
+      if (currentUserId != null) {
+        final dashboardBloc = sl<DashboardBloc>();
+        dashboardBloc.add(AnnouncementViewRegistered(
+          announcementId: _currentAnnouncement!.id,
+          userId: currentUserId,
+        ));
+        _hasTrackedView = true;
+      }
+    } catch (e) {
+      print('Error tracking announcement view: $e');
+    }
   }
 
   Future<void> _checkIfCreator(String announcementCreatorId) async {
@@ -70,7 +88,9 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
           listener: (context, state) {
             if (state is AnnouncementDetailLoaded) {
               _checkIfCreator(state.announcement.createdBy);
-              _currentAnnouncement = state.announcement; // Guardar el anuncio actual
+              _currentAnnouncement = state.announcement;
+              // Track the view when announcement is loaded
+              _trackAnnouncementView();
             } else if (state is AnnouncementDeleted) {
               // Redirigir a la lista de anuncios usando named route
               Navigator.of(context).pushNamedAndRemoveUntil(
@@ -176,6 +196,9 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
             icon: const Icon(Icons.more_vert, color: Colors.white),
             onSelected: (value) {
               switch (value) {
+                case 'analytics':
+                  _navigateToAnalytics(context);
+                  break;
                 case 'edit':
                   _navigateToEdit(context);
                   break;
@@ -184,16 +207,38 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
                   break;
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'edit',
-                child: Text('Edit'),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'analytics',
+                child: Row(
+                  children: [
+                    Icon(Icons.analytics, size: 20),
+                    SizedBox(width: 8),
+                    Text('Analytics'),
+                  ],
+                ),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, size: 20),
+                    SizedBox(width: 8),
+                    Text('Edit'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
                 value: 'delete',
-                child: Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.red),
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text(
+                      'Delete',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -332,6 +377,19 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
         ),
       );
       // La página de edición manejará su propia navegación
+    }
+  }
+
+  void _navigateToAnalytics(BuildContext context) {
+    if (_currentAnnouncement != null) {
+      Navigator.of(context).pushNamed(
+        RouteNames.contentStats,
+        arguments: {
+          'contentId': _currentAnnouncement!.id,
+          'contentType': 'announcement',
+          'contentTitle': _currentAnnouncement!.title,
+        },
+      );
     }
   }
 
